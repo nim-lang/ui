@@ -22,3 +22,4 @@
 
 #mangle intmax_t int64
 #prefix ui
+#def defControl(x) struct x : public uiControl {}

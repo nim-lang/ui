@@ -7,7 +7,7 @@
 #define __LIBUI_UI_H__
 
 #if defined(windows)
-#  define dllName  "ui.dll"
+#  define dllName  "libui.dll"
 #elif defined(macosx)
 #  define dllName  "libui.dylib"
 #else
@@ -25,6 +25,7 @@ _UI_EXTERN void uiUninit(void);
 _UI_EXTERN void uiFreeInitError(const char *err);
 
 _UI_EXTERN void uiMain(void);
+_UI_EXTERN void uiMainSteps(void);
 _UI_EXTERN int uiMainStep(int wait);
 _UI_EXTERN void uiQuit(void);
 
@@ -51,7 +52,7 @@ typedef struct {
   int (*Enabled)(uiControl *);
   void (*Enable)(uiControl *);
   void (*Disable)(uiControl *);
-} uiControl;
+}  uiControl;
 // TOOD add argument names to all arguments
 #define toUiControl(this) ((uiControl *) (this))
 _UI_EXTERN void uiControlDestroy(uiControl *);
@@ -75,12 +76,18 @@ _UI_EXTERN int uiControlEnabledToUser(uiControl *);
 
 _UI_EXTERN void uiUserBugCannotSetParentOnToplevel(const char *type);
 
-#def defControl(x) struct x : public uiControl {}
 defControl(uiWindow);
 #define toUiWindow(this) ((uiWindow *) (this))
 _UI_EXTERN char *uiWindowTitle(uiWindow *w);
 _UI_EXTERN void uiWindowSetTitle(uiWindow *w, const char *title);
+_UI_EXTERN void uiWindowContentSize(uiWindow *w, int *width, int *height);
+_UI_EXTERN void uiWindowSetContentSize(uiWindow *w, int width, int height);
+_UI_EXTERN int uiWindowFullscreen(uiWindow *w);
+_UI_EXTERN void uiWindowSetFullscreen(uiWindow *w, int fullscreen);
+_UI_EXTERN void uiWindowOnContentSizeChanged(uiWindow *w, void (*f)(uiWindow *, void *), void *data);
 _UI_EXTERN void uiWindowOnClosing(uiWindow *w, int (*f)(uiWindow *w, void *data), void *data);
+_UI_EXTERN int uiWindowBorderless(uiWindow *w);
+_UI_EXTERN void uiWindowSetBorderless(uiWindow *w, int borderless);
 _UI_EXTERN void uiWindowSetChild(uiWindow *w, uiControl *child);
 _UI_EXTERN int uiWindowMargined(uiWindow *w);
 _UI_EXTERN void uiWindowSetMargined(uiWindow *w, int margined);
@@ -96,7 +103,7 @@ _UI_EXTERN uiButton *uiNewButton(const char *text);
 defControl(uiBox);
 #define toUiBox(this) ((uiBox *) (this))
 _UI_EXTERN void uiBoxAppend(uiBox *b, uiControl *child, int stretchy);
-_UI_EXTERN void uiBoxDelete(uiBox *b, uintmax_t index);
+_UI_EXTERN void uiBoxDelete(uiBox *b, int index);
 _UI_EXTERN int uiBoxPadded(uiBox *b);
 _UI_EXTERN void uiBoxSetPadded(uiBox *b, int padded);
 _UI_EXTERN uiBox *uiNewHorizontalBox(void);
@@ -119,21 +126,23 @@ _UI_EXTERN void uiEntryOnChanged(uiEntry *e, void (*f)(uiEntry *e, void *data), 
 _UI_EXTERN int uiEntryReadOnly(uiEntry *e);
 _UI_EXTERN void uiEntrySetReadOnly(uiEntry *e, int readonly);
 _UI_EXTERN uiEntry *uiNewEntry(void);
+_UI_EXTERN uiEntry *uiNewPasswordEntry(void);
+_UI_EXTERN uiEntry *uiNewSearchEntry(void);
 
 defControl(uiLabel);
 #define toUiLabel(this) ((uiLabel *) (this))
-_UI_EXTERN char *uiLabelText(uiLabel *l);
-_UI_EXTERN void uiLabelSetText(uiLabel *l, const char *text);
+_UI_EXTERN char *uiLabelText(uiLabel *label);
+_UI_EXTERN void uiLabelSetText(uiLabel *label, const char *text);
 _UI_EXTERN uiLabel *uiNewLabel(const char *text);
 
 defControl(uiTab);
 #define toUiTab(this) ((uiTab *) (this))
 _UI_EXTERN void uiTabAppend(uiTab *t, const char *name, uiControl *c);
-_UI_EXTERN void uiTabInsertAt(uiTab *t, const char *name, uintmax_t before, uiControl *c);
-_UI_EXTERN void uiTabDelete(uiTab *t, uintmax_t index);
-_UI_EXTERN uintmax_t uiTabNumPages(uiTab *t);
-_UI_EXTERN int uiTabMargined(uiTab *t, uintmax_t page);
-_UI_EXTERN void uiTabSetMargined(uiTab *t, uintmax_t page, int margined);
+_UI_EXTERN void uiTabInsertAt(uiTab *t, const char *name, int before, uiControl *c);
+_UI_EXTERN void uiTabDelete(uiTab *t, int index);
+_UI_EXTERN int uiTabNumPages(uiTab *t);
+_UI_EXTERN int uiTabMargined(uiTab *t, int page);
+_UI_EXTERN void uiTabSetMargined(uiTab *t, int page, int margined);
 _UI_EXTERN uiTab *uiNewTab(void);
 
 defControl(uiGroup);
@@ -152,33 +161,34 @@ _UI_EXTERN uiGroup *uiNewGroup(const char *title);
 
 defControl(uiSpinbox);
 #define toUiSpinbox(this) ((uiSpinbox *) (this))
-_UI_EXTERN intmax_t uiSpinboxValue(uiSpinbox *s);
-_UI_EXTERN void uiSpinboxSetValue(uiSpinbox *s, intmax_t value);
+_UI_EXTERN int uiSpinboxValue(uiSpinbox *s);
+_UI_EXTERN void uiSpinboxSetValue(uiSpinbox *s, int value);
 _UI_EXTERN void uiSpinboxOnChanged(uiSpinbox *s, void (*f)(uiSpinbox *s, void *data), void *data);
-_UI_EXTERN uiSpinbox *uiNewSpinbox(intmax_t min, intmax_t max);
+_UI_EXTERN uiSpinbox *uiNewSpinbox(int min, int max);
 
 defControl(uiSlider);
 #define toUiSlider(this) ((uiSlider *) (this))
-_UI_EXTERN intmax_t uiSliderValue(uiSlider *s);
-_UI_EXTERN void uiSliderSetValue(uiSlider *s, intmax_t value);
+_UI_EXTERN int uiSliderValue(uiSlider *s);
+_UI_EXTERN void uiSliderSetValue(uiSlider *s, int value);
 _UI_EXTERN void uiSliderOnChanged(uiSlider *s, void (*f)(uiSlider *s, void *data), void *data);
-_UI_EXTERN uiSlider *uiNewSlider(intmax_t min, intmax_t max);
+_UI_EXTERN uiSlider *uiNewSlider(int min, int max);
 
 defControl(uiProgressBar);
 #define toUiProgressBar(this) ((uiProgressBar *) (this))
-// TODO uiProgressBarValue()
+_UI_EXTERN int uiProgressBarValue(uiProgressBar *p);
 _UI_EXTERN void uiProgressBarSetValue(uiProgressBar *p, int n);
 _UI_EXTERN uiProgressBar *uiNewProgressBar(void);
 
 defControl(uiSeparator);
 #define toUiSeparator(this) ((uiSeparator *) (this))
 _UI_EXTERN uiSeparator *uiNewHorizontalSeparator(void);
+_UI_EXTERN uiSeparator *uiNewVerticalSeparator(void);
 
 defControl(uiCombobox);
 #define toUiCombobox(this) ((uiCombobox *) (this))
 _UI_EXTERN void uiComboboxAppend(uiCombobox *c, const char *text);
-_UI_EXTERN intmax_t uiComboboxSelected(uiCombobox *c);
-_UI_EXTERN void uiComboboxSetSelected(uiCombobox *c, intmax_t n);
+_UI_EXTERN int uiComboboxSelected(uiCombobox *c);
+_UI_EXTERN void uiComboboxSetSelected(uiCombobox *c, int n);
 _UI_EXTERN void uiComboboxOnSelected(uiCombobox *c, void (*f)(uiCombobox *c, void *data), void *data);
 _UI_EXTERN uiCombobox *uiNewCombobox(void);
 
@@ -194,6 +204,9 @@ _UI_EXTERN uiEditableCombobox *uiNewEditableCombobox(void);
 defControl(uiRadioButtons);
 #define toUiRadioButtons(this) ((uiRadioButtons *) (this))
 _UI_EXTERN void uiRadioButtonsAppend(uiRadioButtons *r, const char *text);
+_UI_EXTERN int uiRadioButtonsSelected(uiRadioButtons *r);
+_UI_EXTERN void uiRadioButtonsSetSelected(uiRadioButtons *r, int n);
+_UI_EXTERN void uiRadioButtonsOnSelected(uiRadioButtons *r, void (*f)(uiRadioButtons *, void *), void *data);
 _UI_EXTERN uiRadioButtons *uiNewRadioButtons(void);
 
 defControl(uiDateTimePicker);
@@ -239,23 +252,15 @@ _UI_EXTERN void uiMsgBoxError(uiWindow *parent, const char *title, const char *d
 
 defControl(uiArea);
 
-typedef struct {}uiDrawContext;
-
-struct uiAreaDrawParams {
-  uiDrawContext *Context;
-
-  // TODO document that this is only defined for nonscrolling areas
-  double AreaWidth;
-  double AreaHeight;
-
-  double ClipX;
-  double ClipY;
-  double ClipWidth;
-  double ClipHeight;
+_UI_ENUM(uiModifiers) {
+  uiModifierCtrl = 1 << 0,
+  uiModifierAlt = 1 << 1,
+  uiModifierShift = 1 << 2,
+  uiModifierSuper = 1 << 3,
 };
 
 // TODO document drag captures
-struct uiAreaMouseEvent {
+typedef struct {
   // TODO document what these mean for scrolling areas
   double X;
   double Y;
@@ -264,24 +269,15 @@ struct uiAreaMouseEvent {
   double AreaWidth;
   double AreaHeight;
 
-  uintmax_t Down;
-  uintmax_t Up;
+  int Down;
+  int Up;
 
-  uintmax_t Count;
+  int Count;
 
   uiModifiers Modifiers;
 
   uint64_t Held1To64;
-};
-
-_UI_ENUM(uiModifiers) {
-  uiModifierCtrl = 1 << 0,
-  uiModifierAlt = 1 << 1,
-  uiModifierShift = 1 << 2,
-  uiModifierSuper = 1 << 3,
-};
-
-
+} uiAreaMouseEvent;
 _UI_ENUM(uiExtKey) {
   uiExtKeyEscape = 1,
   uiExtKeyInsert,      // equivalent to "Help" on Apple keyboards
@@ -324,7 +320,7 @@ _UI_ENUM(uiExtKey) {
   uiExtKeyNDivide,
 };
 
-struct uiAreaKeyEvent {
+typedef struct {
   char Key;
   uiExtKey ExtKey;
   uiModifiers Modifier;
@@ -332,7 +328,22 @@ struct uiAreaKeyEvent {
   uiModifiers Modifiers;
 
   int Up;
-};
+} uiAreaKeyEvent;
+
+typedef struct {}  uiDrawContext;
+
+typedef struct {
+  uiDrawContext *Context;
+
+  // TODO document that this is only defined for nonscrolling areas
+  double AreaWidth;
+  double AreaHeight;
+
+  double ClipX;
+  double ClipY;
+  double ClipWidth;
+  double ClipHeight;
+} uiAreaDrawParams;
 
 typedef struct {
   void (*Draw)(uiAreaHandler *, uiArea *, uiAreaDrawParams *);
@@ -348,14 +359,14 @@ typedef struct {
 #define toUiArea(this) ((uiArea *) (this))
 // TODO give a better name
 // TODO document the types of width and height
-_UI_EXTERN void uiAreaSetSize(uiArea *a, intmax_t width, intmax_t height);
+_UI_EXTERN void uiAreaSetSize(uiArea *a, int width, int height);
 // TODO uiAreaQueueRedraw()
 _UI_EXTERN void uiAreaQueueRedrawAll(uiArea *a);
 _UI_EXTERN void uiAreaScrollTo(uiArea *a, double x, double y, double width, double height);
 _UI_EXTERN uiArea *uiNewArea(uiAreaHandler *ah);
-_UI_EXTERN uiArea *uiNewScrollingArea(uiAreaHandler *ah, intmax_t width, intmax_t height);
+_UI_EXTERN uiArea *uiNewScrollingArea(uiAreaHandler *ah, int width, int height);
 
-typedef struct {}uiDrawPath;
+typedef struct {} uiDrawPath;
 
 _UI_ENUM(uiDrawBrushType) {
   uiDrawBrushTypeSolid,
@@ -492,17 +503,17 @@ _UI_EXTERN void uiDrawRestore(uiDrawContext *c);
 
 // TODO manage the use of Text, Font, and TextFont, and of the uiDrawText prefix in general
 
-///// TODO
-typedef struct{} uiDrawFontFamilies;
+///// TODO reconsider this
+typedef struct {} uiDrawFontFamilies;
 
 _UI_EXTERN uiDrawFontFamilies *uiDrawListFontFamilies(void);
-_UI_EXTERN uintmax_t uiDrawFontFamiliesNumFamilies(uiDrawFontFamilies *ff);
-_UI_EXTERN char *uiDrawFontFamiliesFamily(uiDrawFontFamilies *ff, uintmax_t n);
+_UI_EXTERN int uiDrawFontFamiliesNumFamilies(uiDrawFontFamilies *ff);
+_UI_EXTERN char *uiDrawFontFamiliesFamily(uiDrawFontFamilies *ff, int n);
 _UI_EXTERN void uiDrawFreeFontFamilies(uiDrawFontFamilies *ff);
 ///// END TODO
 
-typedef struct {}uiDrawTextLayout;
-typedef struct {}uiDrawTextFont;
+typedef struct {} uiDrawTextLayout;
+typedef struct {} uiDrawTextFont;
 
 _UI_ENUM(uiDrawTextWeight) {
   uiDrawTextWeightThin,
@@ -513,7 +524,7 @@ _UI_ENUM(uiDrawTextWeight) {
   uiDrawTextWeightMedium,
   uiDrawTextWeightSemiBold,
   uiDrawTextWeightBold,
-  uiDrawTextWeightUtraBold,
+  uiDrawTextWeightUltraBold,
   uiDrawTextWeightHeavy,
   uiDrawTextWeightUltraHeavy,
 };
@@ -569,10 +580,9 @@ _UI_EXTERN void uiDrawTextLayoutSetWidth(uiDrawTextLayout *layout, double width)
 _UI_EXTERN void uiDrawTextLayoutExtents(uiDrawTextLayout *layout, double *width, double *height);
 
 // and the attributes that you can set on a text layout
-_UI_EXTERN void uiDrawTextLayoutSetColor(uiDrawTextLayout *layout, intmax_t startChar, intmax_t endChar, double r, double g, double b, double a);
+_UI_EXTERN void uiDrawTextLayoutSetColor(uiDrawTextLayout *layout, int startChar, int endChar, double r, double g, double b, double a);
 
 _UI_EXTERN void uiDrawText(uiDrawContext *c, double x, double y, uiDrawTextLayout *layout);
-
 
 defControl(uiFontButton);
 #define toUiFontButton(this) ((uiFontButton *) (this))
@@ -588,6 +598,36 @@ _UI_EXTERN void uiColorButtonColor(uiColorButton *b, double *r, double *g, doubl
 _UI_EXTERN void uiColorButtonSetColor(uiColorButton *b, double r, double g, double bl, double a);
 _UI_EXTERN void uiColorButtonOnChanged(uiColorButton *b, void (*f)(uiColorButton *, void *), void *data);
 _UI_EXTERN uiColorButton *uiNewColorButton(void);
+
+defControl(uiForm);
+#define toUiForm(this) ((uiForm *) (this))
+_UI_EXTERN void uiFormAppend(uiForm *f, const char *label, uiControl *c, int stretchy);
+_UI_EXTERN void uiFormDelete(uiForm *f, int index);
+_UI_EXTERN int uiFormPadded(uiForm *f);
+_UI_EXTERN void uiFormSetPadded(uiForm *f, int padded);
+_UI_EXTERN uiForm *uiNewForm(void);
+
+_UI_ENUM(uiAlign) {
+  uiAlignFill,
+  uiAlignStart,
+  uiAlignCenter,
+  uiAlignEnd,
+};
+
+_UI_ENUM(uiAt) {
+  uiAtLeading,
+  uiAtTop,
+  uiAtTrailing,
+  uiAtBottom,
+};
+
+defControl(uiGrid);
+#define toUiGrid(this) ((uiGrid *) (this))
+_UI_EXTERN void uiGridAppend(uiGrid *g, uiControl *c, int left, int top, int xspan, int yspan, int hexpand, uiAlign halign, int vexpand, uiAlign valign);
+_UI_EXTERN void uiGridInsertAt(uiGrid *g, uiControl *c, uiControl *existing, uiAt at, int xspan, int yspan, int hexpand, uiAlign halign, int vexpand, uiAlign valign);
+_UI_EXTERN int uiGridPadded(uiGrid *g);
+_UI_EXTERN void uiGridSetPadded(uiGrid *g, int padded);
+_UI_EXTERN uiGrid *uiNewGrid(void);
 
 #ifdef __cplusplus
 }
