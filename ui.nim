@@ -27,7 +27,7 @@ proc text*(b: Button): string =
   ## Gets the button's text.
   $buttonText(b.impl)
 
-proc `text=`(b: Button; text: string) =
+proc `text=`*(b: Button; text: string) =
   ## Sets the button's text.
   buttonSetText(b.impl, text)
 
@@ -48,7 +48,7 @@ proc title*(w: Window): string =
   ## Gets the window's title.
   $windowTitle(w.impl)
 
-proc `title=`(w: Window; text: string) =
+proc `title=`*(w: Window; text: string) =
   ## Sets the window's title.
   windowSetTitle(w.impl, text)
 
@@ -87,7 +87,7 @@ proc add*[SomeWidget: Widget](b: Box; child: SomeWidget; stretchy: bool) =
   boxAppend(b.impl, child.impl, cint(stretchy))
   b.children.add child
 
-proc delete*(b: Box; index: int) = boxDelete(b.impl, index.uint64)
+proc delete*(b: Box; index: int) = boxDelete(b.impl, index.cint)
 proc padded*(b: Box): bool = boxPadded(b.impl) != 0
 proc `padded=`*(b: Box; x: bool) = boxSetPadded(b.impl, x.cint)
 
@@ -153,8 +153,8 @@ type
   Label* = ref object of Widget
     impl*: ptr rawui.Label
 
-proc text*(l: Label): string = $labelText(l.impl)
-proc `text=`*(l: Label; text: string) = labelSetText(l.impl, text)
+proc text*(L: Label): string = $labelText(L.impl)
+proc `text=`*(L: Label; text: string) = labelSetText(L.impl, text)
 proc newLabel*(text: string): Label =
   newFinal(result)
   result.impl = rawui.newLabel(text)
@@ -175,14 +175,14 @@ proc insertAt*[SomeWidget: Widget](t: Tab; name: string; at: int; c: SomeWidget)
   t.children.insert(c, at)
 
 proc delete*(t: Tab; index: int) =
-  tabDelete(t.impl, index.uint64)
+  tabDelete(t.impl, index.cint)
   t.children.delete(index)
 
 proc numPages*(t: Tab): int = tabNumPages(t.impl).int
 proc margined*(t: Tab; page: int): bool =
-  tabMargined(t.impl, page.uint64) != 0
+  tabMargined(t.impl, page.cint) != 0
 proc `margined=`*(t: Tab; page: int; x: bool) =
-  tabSetMargined(t.impl, page.uint64, cint(x))
+  tabSetMargined(t.impl, page.cint, cint(x))
 proc newTab*(): Tab =
   newFinal result
   result.impl = rawui.newTab()
@@ -216,14 +216,14 @@ type
     impl*: ptr rawui.Spinbox
     onchanged*: proc()
 
-proc value*(s: Spinbox): int64 = spinboxValue(s.impl)
-proc `value=`*(s: Spinbox; value: int64) = spinboxSetValue(s.impl, value)
+proc value*(s: Spinbox): int = spinboxValue(s.impl)
+proc `value=`*(s: Spinbox; value: int) = spinboxSetValue(s.impl, value.cint)
 
 voidCallback wrapsbOnChanged, Spinbox, Spinbox, onchanged
 
-proc newSpinbox*(min: int64; max: int64; onchanged: proc () = nil): Spinbox =
+proc newSpinbox*(min, max: int; onchanged: proc () = nil): Spinbox =
   newFinal result
-  result.impl = rawui.newSpinbox(min, max)
+  result.impl = rawui.newSpinbox(cint min, cint max)
   spinboxOnChanged result.impl, wrapsbOnChanged, cast[pointer](result)
   result.onchanged = onchanged
 
@@ -235,13 +235,13 @@ type
     onchanged*: proc()
 
 proc value*(s: Slider): int64 = sliderValue(s.impl)
-proc `value=`*(s: Slider; value: int64) = sliderSetValue(s.impl, value)
+proc `value=`*(s: Slider; value: int) = sliderSetValue(s.impl, cint value)
 
 voidCallback wrapslOnChanged, Slider, Slider, onchanged
 
-proc newSlider*(min: int64; max: int64; onchanged: proc () = nil): Slider =
+proc newSlider*(min, max: int; onchanged: proc () = nil): Slider =
   newFinal result
-  result.impl = rawui.newSlider(min, max)
+  result.impl = rawui.newSlider(cint min, cint max)
   sliderOnChanged result.impl, wrapslOnChanged, cast[pointer](result)
   result.onchanged = onchanged
 
@@ -277,9 +277,9 @@ type
 
 proc add*(c: Combobox; text: string) =
   c.impl.comboboxAppend text
-proc selected*(c: Combobox): int64 = comboboxSelected(c.impl)
-proc `selected=`*(c: Combobox; n: int64) =
-  comboboxSetSelected c.impl, n
+proc selected*(c: Combobox): int = comboboxSelected(c.impl)
+proc `selected=`*(c: Combobox; n: int) =
+  comboboxSetSelected c.impl, cint n
 
 voidCallback wrapbbOnSelected, Combobox, Combobox, onselected
 
