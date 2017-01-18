@@ -41,7 +41,7 @@ proc renderText(ctx: ptr DrawContext; txt: cstring) =
   else:
     let lay = drawNewTextLayout(txt, font, -1.0)
     drawTextLayoutSetColor(lay,
-        0, txt.len,
+        0, txt.len.cint,
         0.0, 0.0, 0.0, 1.0)
     drawText(ctx, 10.0, 400.0, lay)
     drawFreeTextLayout(lay)
@@ -272,7 +272,7 @@ proc main*() {.cdecl.} =
   i = 0
   while i < 10:
     datapoints[i] = newSpinbox(0, 100)
-    spinboxSetValue(datapoints[i], random(101))
+    spinboxSetValue(datapoints[i], random(101).cint)
     spinboxOnChanged(datapoints[i], onDatapointChanged, nil)
     boxAppend(vbox, datapoints[i], 0)
     inc(i)

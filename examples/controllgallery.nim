@@ -41,8 +41,8 @@ var slider*: ptr Slider
 var progressbar*: ptr ProgressBar
 
 proc update*(value: int64) =
-  spinboxSetValue(spinbox, value)
-  sliderSetValue(slider, value)
+  spinboxSetValue(spinbox, value.cint)
+  sliderSetValue(slider, value.cint)
   progressBarSetValue(progressbar, value.cint)
 
 proc onSpinboxChanged*(s: ptr Spinbox; data: pointer) {.cdecl.} =
