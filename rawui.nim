@@ -12,6 +12,7 @@ type
   InitOptions* = object
     size*: csize
 
+{.deadCodeElim: on.}
 
 proc init*(options: ptr InitOptions): cstring {.cdecl, importc: "uiInit",
     dynlib: dllName.}
