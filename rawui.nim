@@ -81,9 +81,9 @@ proc userBugCannotSetParentOnToplevel*(`type`: cstring) {.cdecl,
     importc: "uiUserBugCannotSetParentOnToplevel", dynlib: dllName.}
 type
   Window* = object of Control
-  
 
-template toUiWindow*(this: expr): expr =
+
+template toUiWindow*(this: untyped): untyped =
   (cast[ptr Window]((this)))
 
 proc windowTitle*(w: ptr Window): cstring {.cdecl, importc: "uiWindowTitle",
@@ -104,7 +104,7 @@ proc newWindow*(title: cstring; width: cint; height: cint; hasMenubar: cint): pt
     cdecl, importc: "uiNewWindow", dynlib: dllName.}
 type
   Button* = object of Control
-  
+
 
 template toUiButton*(this: expr): expr =
   (cast[ptr Button]((this)))
@@ -120,7 +120,7 @@ proc newButton*(text: cstring): ptr Button {.cdecl, importc: "uiNewButton",
                                         dynlib: dllName.}
 type
   Box* = object of Control
-  
+
 
 template toUiBox*(this: expr): expr =
   (cast[ptr Box]((this)))
@@ -137,7 +137,7 @@ proc newHorizontalBox*(): ptr Box {.cdecl, importc: "uiNewHorizontalBox",
 proc newVerticalBox*(): ptr Box {.cdecl, importc: "uiNewVerticalBox", dynlib: dllName.}
 type
   Checkbox* = object of Control
-  
+
 
 template toUiCheckbox*(this: expr): expr =
   (cast[ptr Checkbox]((this)))
@@ -157,7 +157,7 @@ proc newCheckbox*(text: cstring): ptr Checkbox {.cdecl, importc: "uiNewCheckbox"
     dynlib: dllName.}
 type
   Entry* = object of Control
-  
+
 
 template toUiEntry*(this: expr): expr =
   (cast[ptr Entry]((this)))
@@ -175,7 +175,7 @@ proc entrySetReadOnly*(e: ptr Entry; readonly: cint) {.cdecl,
 proc newEntry*(): ptr Entry {.cdecl, importc: "uiNewEntry", dynlib: dllName.}
 type
   Label* = object of Control
-  
+
 
 template toUiLabel*(this: expr): expr =
   (cast[ptr Label]((this)))
@@ -186,7 +186,7 @@ proc labelSetText*(l: ptr Label; text: cstring) {.cdecl, importc: "uiLabelSetTex
 proc newLabel*(text: cstring): ptr Label {.cdecl, importc: "uiNewLabel", dynlib: dllName.}
 type
   Tab* = object of Control
-  
+
 
 template toUiTab*(this: expr): expr =
   (cast[ptr Tab]((this)))
@@ -205,7 +205,7 @@ proc tabSetMargined*(t: ptr Tab; page: uint64; margined: cint) {.cdecl,
 proc newTab*(): ptr Tab {.cdecl, importc: "uiNewTab", dynlib: dllName.}
 type
   Group* = object of Control
-  
+
 
 template toUiGroup*(this: expr): expr =
   (cast[ptr Group]((this)))
@@ -225,7 +225,7 @@ proc newGroup*(title: cstring): ptr Group {.cdecl, importc: "uiNewGroup",
 
 type
   Spinbox* = object of Control
-  
+
 
 template toUiSpinbox*(this: expr): expr =
   (cast[ptr Spinbox]((this)))
@@ -241,7 +241,7 @@ proc newSpinbox*(min: int64; max: int64): ptr Spinbox {.cdecl, importc: "uiNewSp
     dynlib: dllName.}
 type
   Slider* = object of Control
-  
+
 
 template toUiSlider*(this: expr): expr =
   (cast[ptr Slider]((this)))
@@ -257,7 +257,7 @@ proc newSlider*(min: int64; max: int64): ptr Slider {.cdecl, importc: "uiNewSlid
     dynlib: dllName.}
 type
   ProgressBar* = object of Control
-  
+
 
 template toUiProgressBar*(this: expr): expr =
   (cast[ptr ProgressBar]((this)))
@@ -269,7 +269,7 @@ proc newProgressBar*(): ptr ProgressBar {.cdecl, importc: "uiNewProgressBar",
                                       dynlib: dllName.}
 type
   Separator* = object of Control
-  
+
 
 template toUiSeparator*(this: expr): expr =
   (cast[ptr Separator]((this)))
@@ -278,7 +278,7 @@ proc newHorizontalSeparator*(): ptr Separator {.cdecl,
     importc: "uiNewHorizontalSeparator", dynlib: dllName.}
 type
   Combobox* = object of Control
-  
+
 
 template toUiCombobox*(this: expr): expr =
   (cast[ptr Combobox]((this)))
@@ -296,7 +296,7 @@ proc comboboxOnSelected*(c: ptr Combobox;
 proc newCombobox*(): ptr Combobox {.cdecl, importc: "uiNewCombobox", dynlib: dllName.}
 type
   EditableCombobox* = object of Control
-  
+
 
 template toUiEditableCombobox*(this: expr): expr =
   (cast[ptr EditableCombobox]((this)))
@@ -315,7 +315,7 @@ proc newEditableCombobox*(): ptr EditableCombobox {.cdecl,
     importc: "uiNewEditableCombobox", dynlib: dllName.}
 type
   RadioButtons* = object of Control
-  
+
 
 template toUiRadioButtons*(this: expr): expr =
   (cast[ptr RadioButtons]((this)))
@@ -326,7 +326,7 @@ proc newRadioButtons*(): ptr RadioButtons {.cdecl, importc: "uiNewRadioButtons",
                                         dynlib: dllName.}
 type
   DateTimePicker* = object of Control
-  
+
 
 template toUiDateTimePicker*(this: expr): expr =
   (cast[ptr DateTimePicker]((this)))
@@ -340,7 +340,7 @@ proc newTimePicker*(): ptr DateTimePicker {.cdecl, importc: "uiNewTimePicker",
 
 type
   MultilineEntry* = object of Control
-  
+
 
 template toUiMultilineEntry*(this: expr): expr =
   (cast[ptr MultilineEntry]((this)))
@@ -364,7 +364,7 @@ proc newNonWrappingMultilineEntry*(): ptr MultilineEntry {.cdecl,
     importc: "uiNewNonWrappingMultilineEntry", dynlib: dllName.}
 type
   MenuItem* = object of Control
-  
+
 
 template toUiMenuItem*(this: expr): expr =
   (cast[ptr MenuItem]((this)))
@@ -382,9 +382,9 @@ proc menuItemSetChecked*(m: ptr MenuItem; checked: cint) {.cdecl,
     importc: "uiMenuItemSetChecked", dynlib: dllName.}
 type
   Menu* = object of Control
-  
 
-template toUiMenu*(this: expr): expr =
+
+template toUiMenu*(this: untyped): untyped =
   (cast[ptr Menu]((this)))
 
 proc menuAppendItem*(m: ptr Menu; name: cstring): ptr MenuItem {.cdecl,
@@ -410,9 +410,9 @@ proc msgBoxError*(parent: ptr Window; title: cstring; description: cstring) {.cd
     importc: "uiMsgBoxError", dynlib: dllName.}
 type
   Area* = object of Control
-  
+
   DrawContext* = object
-  
+
   AreaDrawParams* = object
     context*: ptr DrawContext
     areaWidth*: cdouble
@@ -484,7 +484,7 @@ proc newScrollingArea*(ah: ptr AreaHandler; width: int64; height: int64): ptr Ar
     cdecl, importc: "uiNewScrollingArea", dynlib: dllName.}
 type
   DrawPath* = object
-  
+
   DrawBrushType* {.size: sizeof(cint).} = enum
     DrawBrushTypeSolid, DrawBrushTypeLinearGradient, DrawBrushTypeRadialGradient,
     DrawBrushTypeImage
@@ -615,7 +615,7 @@ proc drawRestore*(c: ptr DrawContext) {.cdecl, importc: "uiDrawRestore",
 
 type
   DrawFontFamilies* = object
-  
+
 
 proc drawListFontFamilies*(): ptr DrawFontFamilies {.cdecl,
     importc: "uiDrawListFontFamilies", dynlib: dllName.}
@@ -628,9 +628,9 @@ proc drawFreeFontFamilies*(ff: ptr DrawFontFamilies) {.cdecl,
 
 type
   DrawTextLayout* = object
-  
+
   DrawTextFont* = object
-  
+
   DrawTextWeight* {.size: sizeof(cint).} = enum
     DrawTextWeightThin, DrawTextWeightUltraLight, DrawTextWeightLight,
     DrawTextWeightBook, DrawTextWeightNormal, DrawTextWeightMedium,
@@ -700,7 +700,7 @@ proc drawText*(c: ptr DrawContext; x: cdouble; y: cdouble; layout: ptr DrawTextL
     cdecl, importc: "uiDrawText", dynlib: dllName.}
 type
   FontButton* = object of Control
-  
+
 
 template toUiFontButton*(this: expr): expr =
   (cast[ptr FontButton]((this)))
@@ -717,9 +717,9 @@ proc newFontButton*(): ptr FontButton {.cdecl, importc: "uiNewFontButton",
                                     dynlib: dllName.}
 type
   ColorButton* = object of Control
-  
 
-template toUiColorButton*(this: expr): expr =
+
+template toUiColorButton*(this: untyped): untyped =
   (cast[ptr ColorButton]((this)))
 
 proc colorButtonColor*(b: ptr ColorButton; r: ptr cdouble; g: ptr cdouble;

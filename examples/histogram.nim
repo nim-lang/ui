@@ -1,7 +1,7 @@
 # 13 october 2015
 
 import
-  ui, random
+  "../rawui", random
 
 var mainwin*: ptr Window
 
@@ -233,7 +233,7 @@ proc onColorChanged*(b: ptr ColorButton; data: pointer) {.cdecl.} =
 
 proc onClosing*(w: ptr Window; data: pointer): cint {.cdecl.} =
   controlDestroy(mainwin)
-  ui.quit()
+  rawui.quit()
   return 0
 
 proc shouldQuit*(data: pointer): cint {.cdecl.} =
@@ -253,7 +253,7 @@ proc main*() {.cdecl.} =
   handler.mouseCrossed = handlerMouseCrossed
   handler.dragBroken = handlerDragBroken
   handler.keyEvent = handlerKeyEvent
-  err = ui.init(addr(o))
+  err = rawui.init(addr(o))
   if err != nil:
     echo "error initializing ui: ", err
     freeInitError(err)
@@ -285,7 +285,7 @@ proc main*() {.cdecl.} =
   histogram = newArea(addr(handler))
   boxAppend(hbox, histogram, 1)
   controlShow(mainwin)
-  ui.main()
-  ui.uninit()
+  rawui.main()
+  rawui.uninit()
 
 main()

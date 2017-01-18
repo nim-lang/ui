@@ -1,7 +1,7 @@
 # 2 september 2015
 
 import
-  ui
+  "../rawui"
 
 # TODOs
 # - rename variables in main()
@@ -11,7 +11,7 @@ var mainwin*: ptr Window
 
 proc onClosing*(w: ptr Window; data: pointer): cint {.cdecl.} =
   controlDestroy(mainwin)
-  ui.quit()
+  rawui.quit()
   return 0
 
 proc shouldQuit*(data: pointer): cint {.cdecl.} =
@@ -19,7 +19,7 @@ proc shouldQuit*(data: pointer): cint {.cdecl.} =
   return 1
 
 proc openClicked*(item: ptr MenuItem; w: ptr Window; data: pointer) {.cdecl.} =
-  var filename = ui.openFile(mainwin)
+  var filename = rawui.openFile(mainwin)
   if filename == nil:
     msgBoxError(mainwin, "No file selected", "Don\'t be alarmed!")
     return
@@ -27,11 +27,11 @@ proc openClicked*(item: ptr MenuItem; w: ptr Window; data: pointer) {.cdecl.} =
   freeText(filename)
 
 proc saveClicked*(item: ptr MenuItem; w: ptr Window; data: pointer) {.cdecl.} =
-  var filename = ui.saveFile(mainwin)
+  var filename = rawui.saveFile(mainwin)
   if filename == nil:
-    msgBoxError(mainwin, "No file selected", "Don\'t be alarmed!")
+    msgBoxError(mainwin, "No file selected", "Don't be alarmed!")
     return
-  msgBox(mainwin, "File selected (don\'t worry, it\'s still there)", filename)
+  msgBox(mainwin, "File selected (don't worry, it's still there)", filename)
   freeText(filename)
 
 var spinbox*: ptr Spinbox
@@ -52,7 +52,7 @@ proc onSliderChanged*(s: ptr Slider; data: pointer) {.cdecl.} =
   update(sliderValue(slider))
 
 proc main*() =
-  var o: ui.InitOptions
+  var o: rawui.InitOptions
   var err: cstring
   var menu: ptr Menu
   var item: ptr MenuItem
@@ -66,7 +66,7 @@ proc main*() =
   var ecbox: ptr EditableCombobox
   var rb: ptr RadioButtons
   var tab: ptr Tab
-  err = ui.init(addr(o))
+  err = rawui.init(addr(o))
   if err != nil:
     echo "error initializing ui: ", err
     freeInitError(err)
@@ -158,7 +158,7 @@ proc main*() =
   tabAppend(tab, "Page 3", newHorizontalBox())
   boxAppend(inner2, tab, 1)
   controlShow(mainwin)
-  ui.main()
-  ui.uninit()
+  rawui.main()
+  rawui.uninit()
 
 main()
