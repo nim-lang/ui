@@ -15,33 +15,29 @@ Start by installing this wrapper using Nimble:
 Then test that everything works by using this code sample:
 
 ```nim
-import ui
 
-var mainWin*: ptr Window
+import
+  ui
 
-proc onClosing*(w: ptr Window; data: pointer): cint {.cdecl.} =
-  controlDestroy(mainWin)
-  ui.quit()
-  return 0
+proc main() =
+  var mainwin = newWindow("libui Control Gallery", 640, 480, true)
+  mainwin.margined = true
+  mainwin.onClosing = (proc (): bool = return true)
 
-proc main*() =
-  var o: ui.InitOptions
+  let box = newVerticalBox(true)
+  mainwin.setChild(box)
 
-  var err = ui.init(addr(o))
-  if err != nil:
-    echo "error initializing ui: ", err
-    freeInitError(err)
-    return
+  var group = newGroup("Basic Controls", true)
+  box.add(group, false)
 
-  mainWin = newWindow("libui in Nim", 200, 100, 1)
-  windowSetMargined(mainWin, 1)
-  windowOnClosing(mainWin, onClosing, nil)
+  var inner = newVerticalBox(true)
+  group.child = inner
 
-  windowSetChild(mainWin, newLabel("Hello, World!"))
+  inner.add newButton("Button", proc() = msgBox(mainwin, "Info", "button clicked!"))
 
-  controlShow(mainWin)
-  ui.main()
-  ui.uninit()
+  show(mainwin)
+  mainLoop()
 
+init()
 main()
 ```
