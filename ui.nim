@@ -4,17 +4,33 @@ import rawui
 type
   Widget* = ref object of RootRef ## abstract Widget base class.
 
+proc init*() =
+  var o: rawui.InitOptions
+  var err: cstring
+  err = rawui.init(addr(o))
+  if err != nil:
+    let msg = $err
+    freeInitError(err)
+    raise newException(ValueError, msg)
+
+proc quit*() = rawui.quit()
+
 # ------------------- Button --------------------------------------
 
 template newFinal(result) =
-  proc finalize(x: type(result)) {.nimcall.} =
-    controlDestroy(x.impl)
-  new(result, finalize)
+  #proc finalize(x: type(result)) {.nimcall.} =
+  #  controlDestroy(x.impl)
+  new(result) #, finalize)
 
 template voidCallback(name, supertyp, basetyp, on) {.dirty.} =
   proc name(w: ptr rawui.supertyp; data: pointer) {.cdecl.} =
     let widget = cast[basetyp](data)
     if widget.on != nil: widget.on()
+
+template intCallback(name, supertyp, basetyp, on) {.dirty.} =
+  proc name(w: ptr rawui.supertyp; data: pointer) {.cdecl.} =
+    let widget = cast[basetyp](data)
+    if widget.on != nil: widget.on(widget.value)
 
 type
   Button* = ref object of Widget
@@ -35,14 +51,15 @@ proc newButton*(text: string; onclick: proc() = nil): Button =
   newFinal(result)
   result.impl = rawui.newButton(text)
   result.impl.buttonOnClicked(wrapOnClick, cast[pointer](result))
+  result.onclick = onclick
 
 # ----------------- Window -------------------------------------------
 
 type
   Window* = ref object of Widget
     impl*: ptr rawui.Window
-    onclosing*: proc ()
-    child*: Widget
+    onclosing*: proc (): bool
+    child: Widget
 
 proc title*(w: Window): string =
   ## Gets the window's title.
@@ -52,9 +69,12 @@ proc `title=`*(w: Window; text: string) =
   ## Sets the window's title.
   windowSetTitle(w.impl, text)
 
-proc onclosingWrapper(w: ptr rawui.Window; data: pointer): cint {.cdecl.} =
+proc onclosingWrapper(rw: ptr rawui.Window; data: pointer): cint {.cdecl.} =
   let w = cast[Window](data)
-  if w.onclosing != nil: w.onclosing()
+  if w.onclosing != nil:
+    if w.onclosing():
+      controlDestroy(w.impl)
+      rawui.quit()
 
 proc newWindow*(title: string; width, height: int; hasMenubar: bool): Window =
   newFinal(result)
@@ -69,8 +89,23 @@ proc setChild*[SomeWidget: Widget](w: Window; child: SomeWidget) =
   windowSetChild(w.impl, child.impl)
   w.child = child
 
-proc openFile*(parent: Window): cstring = $openFile(parent.impl)
-proc saveFile*(parent: Window): cstring = $saveFile(parent.impl)
+proc show*(w: Window) =
+  controlShow(w.impl)
+
+proc mainLoop*() =
+  rawui.main()
+  rawui.uninit()
+
+proc openFile*(parent: Window): string =
+  let x = openFile(parent.impl)
+  result = $x
+  freeText(x)
+
+proc saveFile*(parent: Window): string =
+  let x = saveFile(parent.impl)
+  result = $x
+  freeText(x)
+
 proc msgBox*(parent: Window; title, desc: string) =
   msgBox(parent.impl, title, desc)
 proc msgBoxError*(parent: Window; title, desc: string) =
@@ -83,7 +118,7 @@ type
     impl*: ptr rawui.Box
     children*: seq[Widget]
 
-proc add*[SomeWidget: Widget](b: Box; child: SomeWidget; stretchy: bool) =
+proc add*[SomeWidget: Widget](b: Box; child: SomeWidget; stretchy=false) =
   boxAppend(b.impl, child.impl, cint(stretchy))
   b.children.add child
 
@@ -91,15 +126,17 @@ proc delete*(b: Box; index: int) = boxDelete(b.impl, index.cint)
 proc padded*(b: Box): bool = boxPadded(b.impl) != 0
 proc `padded=`*(b: Box; x: bool) = boxSetPadded(b.impl, x.cint)
 
-proc newHorizontalBox*(): Box =
+proc newHorizontalBox*(padded = false): Box =
   newFinal(result)
   result.impl = rawui.newHorizontalBox()
   result.children = @[]
+  boxSetPadded(result.impl, padded.cint)
 
-proc newVerticalBox*(): Box =
+proc newVerticalBox*(padded = false): Box =
   newFinal(result)
   result.impl = rawui.newVerticalBox()
   result.children = @[]
+  boxSetPadded(result.impl, padded.cint)
 
 # -------------------- Checkbox ----------------------------------
 
@@ -141,11 +178,12 @@ proc readOnly*(e: Entry): bool = entryReadOnly(e.impl) != 0
 proc `readOnly=`*(e: Entry; x: bool) =
   entrySetReadOnly(e.impl, cint(x))
 
-proc newEntry*(onchanged: proc() = nil): Entry =
+proc newEntry*(text: string; onchanged: proc() = nil): Entry =
   newFinal(result)
   result.impl = rawui.newEntry()
   result.impl.entryOnChanged(wrapOnchanged, cast[pointer](result))
   result.onchanged = onchanged
+  entrySetText(result.impl, text)
 
 # ----------------- Label ----------------------------------------
 
@@ -193,7 +231,7 @@ proc newTab*(): Tab =
 type
   Group* = ref object of Widget
     impl*: ptr rawui.Group
-    child*: Widget
+    child: Widget
 
 proc title*(g: Group): string = $groupTitle(g.impl)
 proc `title=`*(g: Group; title: string) =
@@ -205,23 +243,24 @@ proc margined*(g: Group): bool = groupMargined(g.impl) != 0
 proc `margined=`*(g: Group; x: bool) =
   groupSetMargined(g.impl, x.cint)
 
-proc newGroup*(title: string): Group =
+proc newGroup*(title: string; margined=false): Group =
   newFinal result
   result.impl = rawui.newGroup(title)
+  groupSetMargined(result.impl, margined.cint)
 
 # ----------------------- Spinbox ---------------------------------------
 
 type
   Spinbox* = ref object of Widget
     impl*: ptr rawui.Spinbox
-    onchanged*: proc()
+    onchanged*: proc(newvalue: int)
 
 proc value*(s: Spinbox): int = spinboxValue(s.impl)
 proc `value=`*(s: Spinbox; value: int) = spinboxSetValue(s.impl, value.cint)
 
-voidCallback wrapsbOnChanged, Spinbox, Spinbox, onchanged
+intCallback wrapsbOnChanged, Spinbox, Spinbox, onchanged
 
-proc newSpinbox*(min, max: int; onchanged: proc () = nil): Spinbox =
+proc newSpinbox*(min, max: int; onchanged: proc (newvalue: int) = nil): Spinbox =
   newFinal result
   result.impl = rawui.newSpinbox(cint min, cint max)
   spinboxOnChanged result.impl, wrapsbOnChanged, cast[pointer](result)
@@ -232,14 +271,14 @@ proc newSpinbox*(min, max: int; onchanged: proc () = nil): Spinbox =
 type
   Slider* = ref object of Widget
     impl*: ptr rawui.Slider
-    onchanged*: proc()
+    onchanged*: proc(newvalue: int)
 
-proc value*(s: Slider): int64 = sliderValue(s.impl)
+proc value*(s: Slider): int = sliderValue(s.impl)
 proc `value=`*(s: Slider; value: int) = sliderSetValue(s.impl, cint value)
 
-voidCallback wrapslOnChanged, Slider, Slider, onchanged
+intCallback wrapslOnChanged, Slider, Slider, onchanged
 
-proc newSlider*(min, max: int; onchanged: proc () = nil): Slider =
+proc newSlider*(min, max: int; onchanged: proc (newvalue: int) = nil): Slider =
   newFinal result
   result.impl = rawui.newSlider(cint min, cint max)
   sliderOnChanged result.impl, wrapslOnChanged, cast[pointer](result)
@@ -387,18 +426,38 @@ template addMenuItemImpl(ex) =
   menuItemOnClicked(result.impl, wrapmeOnclicked, cast[pointer](result))
   m.children.add result
 
-proc addItem*(m: Menu; name: string): MenuItem =
+proc addItem*(m: Menu; name: string, onclicked: proc()): MenuItem {.discardable.} =
   addMenuItemImpl(menuAppendItem(m.impl, name))
+  result.onclicked = onclicked
 
-proc addCheckItem*(m: Menu; name: string): MenuItem =
+proc addCheckItem*(m: Menu; name: string, onclicked: proc()): MenuItem {.discardable.} =
   addMenuItemImpl(menuAppendCheckItem(m.impl, name))
+  result.onclicked = onclicked
 
-proc addQuitItem*(m: Menu): MenuItem =
-  addMenuItemImpl(menuAppendQuitItem(m.impl))
-proc addPreferencesItem*(m: Menu): MenuItem =
+type
+  ShouldQuitClosure = ref object
+    fn: proc(): bool
+
+proc wrapOnShouldQuit(data: pointer): cint {.cdecl.} =
+  let c = cast[ShouldQuitClosure](data)
+  result = cint(c.fn())
+  if result == 1: GC_unref c
+
+proc addQuitItem*(m: Menu, shouldQuit: proc(): bool): MenuItem {.discardable.} =
+  newFinal result
+  result.impl = menuAppendQuitItem(m.impl)
+  m.children.add result
+  var cl = ShouldQuitClosure(fn: shouldQuit)
+  GC_ref cl
+  onShouldQuit(wrapOnShouldQuit, cast[pointer](cl))
+
+proc addPreferencesItem*(m: Menu, onclicked: proc()): MenuItem {.discardable.} =
   addMenuItemImpl(menuAppendPreferencesItem(m.impl))
-proc addAboutItem*(m: Menu): MenuItem =
+  result.onclicked = onclicked
+
+proc addAboutItem*(m: Menu, onclicked: proc()): MenuItem {.discardable.} =
   addMenuItemImpl(menuAppendAboutItem(m.impl))
+  result.onclicked = onclicked
 
 proc addSeparator*(m: Menu) =
   menuAppendSeparator m.impl
@@ -407,3 +466,23 @@ proc newMenu*(name: string): Menu =
   newFinal result
   result.impl = rawui.newMenu(name)
   result.children = @[]
+
+# -------------------- DateTimePicker ------------------------------
+
+when false:
+  # XXX no way yet to get the date out of this?
+  type
+    DateTimePicker* = ref object of Widget
+      impl*: ptr rawui.DateTimePicker
+
+  proc newDateTimePicker*(): DateTimePicker =
+    newFinal result
+    result.impl = rawui.newDateTimePicker()
+
+  proc newDatePicker*(): DateTimePicker =
+    newFinal result
+    result.impl = rawui.newDatePicker()
+
+  proc newTimePicker*(): DateTimePicker =
+    newFinal result
+    result.impl = rawui.newTimePicker()
