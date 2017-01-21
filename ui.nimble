@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.8"
+version       = "0.9"
 author        = "Andreas Rumpf"
 description   = "Nim\'s official UI library"
 license       = "MIT"
