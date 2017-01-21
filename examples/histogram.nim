@@ -1,7 +1,7 @@
 # 13 october 2015
 
 import
-  "../rawui", random
+  "../ui/rawui", random
 
 var mainwin*: ptr Window
 

@@ -1,5 +1,5 @@
 
-import rawui
+import ui/rawui
 
 type
   Widget* = ref object of RootRef ## abstract Widget base class.

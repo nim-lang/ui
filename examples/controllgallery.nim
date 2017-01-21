@@ -1,7 +1,7 @@
 # 2 september 2015
 
 import
-  "../rawui"
+  "../ui/rawui"
 
 # TODOs
 # - rename variables in main()
