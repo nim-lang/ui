@@ -15,6 +15,20 @@ proc init*() =
 
 proc quit*() = rawui.quit()
 
+proc mainLoop*() =
+  rawui.main()
+  rawui.uninit()
+
+proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) =
+  ## Can be used to merge an async event loop with UI's event loop.
+  ## Implemented using timeouts and polling because that's the only
+  ## thing that truely composes.
+  rawui.mainSteps()
+  while true:
+    poll(timeout)
+    discard rawui.mainStep(0)# != 0: break
+  rawui.uninit()
+
 # ------------------- Button --------------------------------------
 
 template newFinal(result) =
@@ -91,10 +105,6 @@ proc setChild*[SomeWidget: Widget](w: Window; child: SomeWidget) =
 
 proc show*(w: Window) =
   controlShow(w.impl)
-
-proc mainLoop*() =
-  rawui.main()
-  rawui.uninit()
 
 proc openFile*(parent: Window): string =
   let x = openFile(parent.impl)
