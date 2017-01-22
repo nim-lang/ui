@@ -89,9 +89,6 @@ proc setChild*[SomeWidget: Widget](w: Window; child: SomeWidget) =
   windowSetChild(w.impl, child.impl)
   w.child = child
 
-proc show*(w: Window) =
-  controlShow(w.impl)
-
 proc mainLoop*() =
   rawui.main()
   rawui.uninit()
@@ -466,6 +463,20 @@ proc newMenu*(name: string): Menu =
   newFinal result
   result.impl = rawui.newMenu(name)
   result.children = @[]
+
+# -------------------- Generics ------------------------------------
+
+proc show*[W](w: W) =
+  rawui.controlShow(w.impl)
+
+proc hide*[W](w: W) =
+  rawui.controlHide(w.impl)
+
+proc enable*[W](w: W) =
+  rawui.controlEnable(w.impl)
+
+proc disable*[W](w: W) =
+  rawui.controlDisable(w.impl)
 
 # -------------------- DateTimePicker ------------------------------
 
