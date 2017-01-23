@@ -103,9 +103,6 @@ proc setChild*[SomeWidget: Widget](w: Window; child: SomeWidget) =
   windowSetChild(w.impl, child.impl)
   w.child = child
 
-proc show*(w: Window) =
-  controlShow(w.impl)
-
 proc openFile*(parent: Window): string =
   let x = openFile(parent.impl)
   result = $x
@@ -476,6 +473,20 @@ proc newMenu*(name: string): Menu =
   newFinal result
   result.impl = rawui.newMenu(name)
   result.children = @[]
+
+# -------------------- Generics ------------------------------------
+
+proc show*[W: Widget](w: W) =
+  rawui.controlShow(w.impl)
+
+proc hide*[W: Widget](w: W) =
+  rawui.controlHide(w.impl)
+
+proc enable*[W: Widget](w: W) =
+  rawui.controlEnable(w.impl)
+
+proc disable*[W: Widget](w: W) =
+  rawui.controlDisable(w.impl)
 
 # -------------------- DateTimePicker ------------------------------
 
