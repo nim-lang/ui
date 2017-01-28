@@ -83,6 +83,11 @@ proc `title=`*(w: Window; text: string) =
   ## Sets the window's title.
   windowSetTitle(w.impl, text)
 
+proc destroy*(w: Window) =
+  ## this needs to be called if the callback passed to addQuitItem returns
+  ## true. Don't ask...
+  controlDestroy(w.impl)
+
 proc onclosingWrapper(rw: ptr rawui.Window; data: pointer): cint {.cdecl.} =
   let w = cast[Window](data)
   if w.onclosing != nil:
@@ -106,12 +111,12 @@ proc setChild*[SomeWidget: Widget](w: Window; child: SomeWidget) =
 proc openFile*(parent: Window): string =
   let x = openFile(parent.impl)
   result = $x
-  freeText(x)
+  if x != nil: freeText(x)
 
 proc saveFile*(parent: Window): string =
   let x = saveFile(parent.impl)
   result = $x
-  freeText(x)
+  if x != nil: freeText(x)
 
 proc msgBox*(parent: Window; title, desc: string) =
   msgBox(parent.impl, title, desc)
@@ -448,7 +453,8 @@ type
 proc wrapOnShouldQuit(data: pointer): cint {.cdecl.} =
   let c = cast[ShouldQuitClosure](data)
   result = cint(c.fn())
-  if result == 1: GC_unref c
+  if result == 1:
+    GC_unref c
 
 proc addQuitItem*(m: Menu, shouldQuit: proc(): bool): MenuItem {.discardable.} =
   newFinal result
