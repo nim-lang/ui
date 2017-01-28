@@ -45,6 +45,7 @@ else:
     {.link: r"dwrite.lib".}
     {.link: r"UxTheme.lib".}
     {.link: r"Usp10.lib".}
+    {.link: r"..\res\resources.res".}
 
 type
   InitOptions* = object
