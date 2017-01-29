@@ -18,6 +18,14 @@ else:
     {.compile: ("../../libui/windows/*.cpp", "win_$#.obj").}
   elif defined(macosx):
     {.compile: ("../../libui/darwin/*.m", "osx_$#.obj").}
+
+    {.passL: "-framework OpenGL".}
+    {.passL: "-framework CoreAudio".}
+    {.passL: "-framework AudioToolbox".}
+    {.passL: "-framework AudioUnit".}
+    {.passL: "-framework Carbon".}
+    {.passL: "-framework IOKit".}
+    {.passL: "-framework Cocoa".}
   else:
     {.compile: ("../../libui/unix/*.c", "unix_$#.obj").}
   when defined(vcc):
