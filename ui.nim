@@ -94,6 +94,7 @@ proc onclosingWrapper(rw: ptr rawui.Window; data: pointer): cint {.cdecl.} =
     if w.onclosing():
       controlDestroy(w.impl)
       rawui.quit()
+      system.quit()
 
 proc newWindow*(title: string; width, height: int; hasMenubar: bool): Window =
   newFinal(result)
