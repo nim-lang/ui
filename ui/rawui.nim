@@ -13,11 +13,27 @@ when defined(useLibUiDll) or (defined(windows) and not defined(vcc)):
   {.pragma: mylib, dynlib: dllName.}
 else:
   {.pragma: mylib.}
+  when defined(linux):
+    # thanks to 'import math' missing linking flags are added
+    import math
+    const cflags = staticExec"pkg-config --cflags gtk+-3.0"
+    const lflags = staticExec"pkg-config --libs gtk+-3.0"
+    {.passC: cflags.}
+    {.passL: lflags.}
+
   {.compile: ("../../libui/common/*.c", "common_$#.obj").}
   when defined(windows):
     {.compile: ("../../libui/windows/*.cpp", "win_$#.obj").}
   elif defined(macosx):
     {.compile: ("../../libui/darwin/*.m", "osx_$#.obj").}
+
+    {.passL: "-framework OpenGL".}
+    {.passL: "-framework CoreAudio".}
+    {.passL: "-framework AudioToolbox".}
+    {.passL: "-framework AudioUnit".}
+    {.passL: "-framework Carbon".}
+    {.passL: "-framework IOKit".}
+    {.passL: "-framework Cocoa".}
   else:
     {.compile: ("../../libui/unix/*.c", "unix_$#.obj").}
   when defined(vcc):
