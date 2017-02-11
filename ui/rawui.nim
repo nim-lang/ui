@@ -16,8 +16,9 @@ else:
   when defined(linux):
     # thanks to 'import math' missing linking flags are added
     import math
-    const cflags = staticExec"pkg-config --cflags gtk+-3.0"
-    const lflags = staticExec"pkg-config --libs gtk+-3.0"
+    from strutils import replace
+    const cflags = (staticExec"pkg-config --cflags gtk+-3.0").replace('\L', ' ')
+    const lflags = (staticExec"pkg-config --libs gtk+-3.0").replace('\L', ' ')
     {.passC: cflags.}
     {.passL: lflags.}
 
