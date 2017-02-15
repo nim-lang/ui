@@ -2,17 +2,26 @@
 
 This package wraps the [libui](https://github.com/andlabs/libui) C library.
 
-In order to make use of it you will need to build the C library first.
-Instructions for doing so can be found
-[here](https://github.com/andlabs/libui#building).
+In order to make use of it you will need to do:
+
+```
+cd ui
+cd .. # ensure libui is a sibling of your ui directory
+git clone https://github.com/araq/libui
+cd ui
+nim c -r examples/controllgallery2.nim
+```
+
+On Windows currently Visual Studio is required, so you need to use:
+
+```
+nim c -r --cc:vcc examples/controllgallery2.nim
+```
+
 
 ## Using the wrapper
 
-Start by installing this wrapper using Nimble:
-
-    nimble install ui
-
-Then test that everything works by using this code sample:
+Test that everything works by using this code sample:
 
 ```nim
 
