@@ -7,7 +7,7 @@ In order to make use of it you will need to do:
 ```
 cd ui
 cd .. # ensure libui is a sibling of your ui directory
-git clone https://github.com/araq/libui
+git clone https://github.com/nim-lang/ui.git
 cd ui
 nim c -r examples/controllgallery2.nim
 ```
