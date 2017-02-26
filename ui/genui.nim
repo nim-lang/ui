@@ -36,8 +36,12 @@ macro genui*(args: varargs[untyped]): untyped =
     if hasAddArguments:
       result = parseBracketExpr(call[0])
     else:
-      result.name = $call[0].ident  
-    result.arguments = if hasChildren: call[1..<call.high] else: call[1..call.high]
+      result.name = $call[0].ident
+    if result.arguments == nil:
+      result.arguments = if hasChildren: call[1..<call.high] else: call[1..call.high]
+    #else:
+    #  for arg in if hasChildren: call[1..<call.high] else: call[1..call.high]:
+    #    result.arguments.add arg
     result.children = if hasChildren: parseChildren(call[call.high]) else: nil
 
   proc parseBracketExpr(bracketExpr:NimNode):WidgetArguments =
@@ -138,6 +142,7 @@ macro genui*(args: varargs[untyped]): untyped =
           addCall.add addArg
         result.add addCall
 
+  echo treeRepr args[0]
   let parsed = parseChildren(args[0])
   result = newStmtList()
   for widget in parsed:
@@ -145,3 +150,4 @@ macro genui*(args: varargs[untyped]): untyped =
     let widgetCode = createWidget(w)
     for node in widgetCode:
       result.add(node)
+  echo result.toStrLit
