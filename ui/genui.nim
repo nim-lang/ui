@@ -142,7 +142,7 @@ macro genui*(args: varargs[untyped]): untyped =
           addCall.add addArg
         result.add addCall
 
-  echo treeRepr args[0]
+  #echo treeRepr args[0]
   let parsed = parseChildren(args[0])
   result = newStmtList()
   for widget in parsed:
@@ -150,4 +150,4 @@ macro genui*(args: varargs[untyped]): untyped =
     let widgetCode = createWidget(w)
     for node in widgetCode:
       result.add(node)
-  echo result.toStrLit
+  #echo result.toStrLit
