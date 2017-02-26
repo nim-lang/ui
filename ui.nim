@@ -215,15 +215,26 @@ proc newLabel*(text: string): Label =
 type
   Tab* = ref object of Widget
     impl*: ptr rawui.Tab
+    marginedDefault*: bool
     children*: seq[Widget]
 
 proc add*[SomeWidget: Widget](t: Tab; name: string; child: SomeWidget) =
   tabAppend t.impl, name, child.impl
+  tabSetMargined(t.impl, tabNumPages(t.impl)-1, cint(t.marginedDefault))
   t.children.add child
+
+proc add*[SomeWidget: Widget](t: Tab; name: string; child: SomeWidget; margined: bool) =
+  add(t,name,child)
+  tabSetMargined(t.impl, tabNumPages(t.impl)-1, cint(margined))
 
 proc insertAt*[SomeWidget: Widget](t: Tab; name: string; at: int; child: SomeWidget) =
   tabInsertAt(t.impl, name, at.uint64, child.impl)
+  tabSetMargined(t.impl, at.uint64, cint(t.marginedDefault))
   t.children.insert(child, at)
+
+proc insertAt*[SomeWidget: Widget](t: Tab; name: string; at: int; child: SomeWidget; margined: bool) =
+  insertAt(t,name,at,child)
+  tabSetMargined(t.impl, at.uint64, cint(margined))
 
 proc delete*(t: Tab; index: int) =
   tabDelete(t.impl, index.cint)
@@ -234,9 +245,10 @@ proc margined*(t: Tab; page: int): bool =
   tabMargined(t.impl, page.cint) != 0
 proc `margined=`*(t: Tab; page: int; x: bool) =
   tabSetMargined(t.impl, page.cint, cint(x))
-proc newTab*(): Tab =
+proc newTab*(margined = false): Tab =
   newFinal result
   result.impl = rawui.newTab()
+  result.marginedDefault = margined
   result.children = @[]
 
 # ------------- Group --------------------------------------------------
