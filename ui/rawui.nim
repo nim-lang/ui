@@ -1,6 +1,5 @@
 
-when defined(useLibUiDll) or (defined(windows) and not defined(vcc)):
-  # Unfortunately Mingw cannot build libui :-( so Mingw still requires the DLL.
+when defined(useLibUiDll):
   when defined(windows):
     const
       dllName* = "libui.dll"
@@ -37,6 +36,26 @@ else:
     {.passL: "-framework Cocoa".}
   else:
     {.compile: ("../../libui/unix/*.c", "unix_$#.obj").}
+  when defined(gcc):
+    #{.passL: r"C:\Users\rumpf\projects\mingw64\x86_64-w64-mingw32\lib\liboleaut32.a".}
+    {.passL: r"-lwinspool".}
+    {.passL: r"-lcomdlg32".}
+    {.passL: r"-ladvapi32".}
+    {.passL: r"-lshell32".}
+    {.passL: r"-lole32".}
+    {.passL: r"-loleaut32".}
+
+    {.passL: r"-luuid".}
+    {.passL: r"-lcomctl32".}
+    {.passL: r"-ld2d1".}
+    {.passL: r"-ldwrite".}
+    {.passL: r"-lUxTheme".}
+    {.passL: r"-lUsp10".}
+    {.passL: r"-lgdi32".}
+    {.passL: r"-luser32".}
+    {.passL: r"-lkernel32".}
+    {.link: r"..\res\resources.o".}
+
   when defined(vcc):
     {.passC: "/EHsc".}
     when false:
