@@ -36,7 +36,7 @@ else:
     {.passL: "-framework Cocoa".}
   else:
     {.compile: ("../../libui/unix/*.c", "unix_$#.obj").}
-  when defined(gcc):
+  when defined(gcc) and defined(windows):
     #{.passL: r"C:\Users\rumpf\projects\mingw64\x86_64-w64-mingw32\lib\liboleaut32.a".}
     {.passL: r"-lwinspool".}
     {.passL: r"-lcomdlg32".}
