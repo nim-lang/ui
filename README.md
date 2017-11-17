@@ -12,12 +12,6 @@ cd ui
 nim c -r examples/controllgallery2.nim
 ```
 
-On Windows currently Visual Studio is required, so you need to use:
-
-```
-nim c -r --cc:vcc examples/controllgallery2.nim
-```
-
 
 ## Using the wrapper
 
