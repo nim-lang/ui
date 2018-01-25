@@ -33,12 +33,12 @@ template newFinal(result) =
   #proc finalize(x: type(result)) {.nimcall.} =
   #  controlDestroy(x.impl)
   new(result) #, finalize)
-  
+
 template voidCallback(name, supertyp, basetyp, on) {.dirty.} =
   proc name(w: ptr rawui.supertyp; data: pointer) {.cdecl.} =
     let widget = cast[basetyp](data)
     if widget.on != nil: widget.on()
-  
+
 template intCallback(name, supertyp, basetyp, on) {.dirty.} =
   proc name(w: ptr rawui.supertyp; data: pointer) {.cdecl.} =
     let widget = cast[basetyp](data)
@@ -71,9 +71,9 @@ proc newButton*(text: string; onclick: proc() = nil): Button =
 type
   RadioButtons* = ref object of Widget
     impl*: ptr rawui.RadioButtons
-    onradiobuttonclick*: proc() {.closure.}
+    onRadioButtonClick*: proc() {.closure.}
 
-voidCallback(wrapOnRadioButtonClick,RadioButtons,RadioButtons,onradiobuttonclick)
+voidCallback(wrapOnRadioButtonClick, RadioButtons, RadioButtons, onRadioButtonClick)
 
 proc add*(r: RadioButtons; text: string) =
   radioButtonsAppend(r.impl, text)
@@ -84,8 +84,8 @@ proc radioButtonsSelected*(r: RadioButtons): int =
 proc newRadioButtons*(onclick: proc() = nil): RadioButtons =
   newFinal(result)
   result.impl = rawui.newRadioButtons()
-  result.impl.radioButtonsOnSelected(wrapOnRadioButtonClick,cast[pointer](result))
-  result.onradiobuttonclick = onclick
+  result.impl.radioButtonsOnSelected(wrapOnRadioButtonClick, cast[pointer](result))
+  result.onRadioButtonClick = onclick
 
 # ----------------- Window -------------------------------------------
 
