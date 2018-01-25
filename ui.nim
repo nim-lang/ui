@@ -29,8 +29,6 @@ proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) =
     discard rawui.mainStep(0)# != 0: break
   rawui.uninit()
 
-# ------------------- Button --------------------------------------
-
 template newFinal(result) =
   #proc finalize(x: type(result)) {.nimcall.} =
   #  controlDestroy(x.impl)
@@ -46,6 +44,7 @@ template intCallback(name, supertyp, basetyp, on) {.dirty.} =
     let widget = cast[basetyp](data)
     if widget.on != nil: widget.on(widget.value)
 
+# ------------------- Button --------------------------------------
 type
   Button* = ref object of Widget
     impl*: ptr rawui.Button
@@ -66,6 +65,27 @@ proc newButton*(text: string; onclick: proc() = nil): Button =
   result.impl = rawui.newButton(text)
   result.impl.buttonOnClicked(wrapOnClick, cast[pointer](result))
   result.onclick = onclick
+
+# ------------------------ RadioButtons ----------------------------
+
+type
+  RadioButtons* = ref object of Widget
+    impl*: ptr rawui.RadioButtons
+    onRadioButtonClick*: proc() {.closure.}
+
+voidCallback(wrapOnRadioButtonClick, RadioButtons, RadioButtons, onRadioButtonClick)
+
+proc add*(r: RadioButtons; text: string) =
+  radioButtonsAppend(r.impl, text)
+
+proc radioButtonsSelected*(r: RadioButtons): int =
+  radioButtonsSelected(r.impl)
+
+proc newRadioButtons*(onclick: proc() = nil): RadioButtons =
+  newFinal(result)
+  result.impl = rawui.newRadioButtons()
+  result.impl.radioButtonsOnSelected(wrapOnRadioButtonClick, cast[pointer](result))
+  result.onRadioButtonClick = onclick
 
 # ----------------- Window -------------------------------------------
 
@@ -364,18 +384,6 @@ proc newEditableCombobox*(onchanged: proc () = nil): EditableCombobox =
   result.impl = rawui.newEditableCombobox()
   result.onchanged = onchanged
   editableComboboxOnChanged result.impl, wrapecbOnchanged, cast[pointer](result)
-
-# ------------------------ RadioButtons ----------------------------
-
-type
-  RadioButtons* = ref object of Widget
-    impl*: ptr rawui.RadioButtons
-
-proc add*(r: RadioButtons; text: string) =
-  radioButtonsAppend(r.impl, text)
-proc newRadioButtons*(): RadioButtons =
-  newFinal result
-  result.impl = rawui.newRadioButtons()
 
 # ------------------------ MultilineEntry ------------------------------
 
