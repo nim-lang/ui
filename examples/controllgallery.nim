@@ -1,7 +1,6 @@
 # 2 september 2015
 
-import
-  "../ui/rawui"
+import ui/rawui
 
 # TODOs
 # - rename variables in main()

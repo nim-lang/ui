@@ -1,7 +1,6 @@
 # 13 october 2015
 
-import
-  "../ui/rawui", random
+import ui/rawui, random
 
 var mainwin*: ptr Window
 
