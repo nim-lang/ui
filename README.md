@@ -1,46 +1,30 @@
 # UI
 
-This package wraps the [libui](https://github.com/andlabs/libui) C library.
+This package wraps the [libui](https://github.com/andlabs/libui) C library. It
+also provides a high-level Nim binding for it.
 
-In order to make use of it you will need to do:
+To get started, install using Nimble:
 
-```
-cd ui
-cd .. # ensure libui is a sibling of your ui directory
-git clone https://github.com/araq/libui
-cd ui
-nim c -r examples/controllgallery2.nim
+```bash
+nimble install ui
 ```
 
-
-## Using the wrapper
-
-Test that everything works by using this code sample:
+or add it to your project's Nimble file:
 
 ```nim
-
-import
-  ui
-
-proc main() =
-  var mainwin = newWindow("libui Control Gallery", 640, 480, true)
-  mainwin.margined = true
-  mainwin.onClosing = (proc (): bool = return true)
-
-  let box = newVerticalBox(true)
-  mainwin.setChild(box)
-
-  var group = newGroup("Basic Controls", true)
-  box.add(group, false)
-
-  var inner = newVerticalBox(true)
-  group.child = inner
-
-  inner.add newButton("Button", proc() = msgBox(mainwin, "Info", "button clicked!"))
-
-  show(mainwin)
-  mainLoop()
-
-init()
-main()
+requires "ui"
 ```
+
+You should then be able to compile the sample code in the
+[``examples/``](https://github.com/nim-lang/ui/tree/master/examples)
+directory successfully.
+
+## Static vs. dynamic linking
+
+This library installs the C sources for libui and statically compiles them
+into your application.
+
+Static compilation is the default behaviour, but if you would prefer to depend
+on a DLL instead, pass the ``-d:useLibUiDll`` to the Nim compiler. You will
+then need to bundle your application with a libui.dll, libui.dylib, or libui.so
+for Windows, macOS, and Linux respectively.

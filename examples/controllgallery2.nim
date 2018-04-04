@@ -1,7 +1,6 @@
 # Test & show the new high level wrapper
 
-import
-  "../ui"
+import ui
 
 proc main*() =
   var mainwin: Window

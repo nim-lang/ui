@@ -1,0 +1,3 @@
+[submodule "ui/libui"]
+	path = ui/libui
+	url = https://github.com/Araq/libui

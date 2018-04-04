@@ -1,4 +1,3 @@
-
 when defined(useLibUiDll):
   when defined(windows):
     const
@@ -21,11 +20,11 @@ else:
     {.passC: cflags.}
     {.passL: lflags.}
 
-  {.compile: ("../../libui/common/*.c", "common_$#.obj").}
+  {.compile: ("./libui/common/*.c", "common_$#.obj").}
   when defined(windows):
-    {.compile: ("../../libui/windows/*.cpp", "win_$#.obj").}
+    {.compile: ("./libui/windows/*.cpp", "win_$#.obj").}
   elif defined(macosx):
-    {.compile: ("../../libui/darwin/*.m", "osx_$#.obj").}
+    {.compile: ("./libui/darwin/*.m", "osx_$#.obj").}
 
     {.passL: "-framework OpenGL".}
     {.passL: "-framework CoreAudio".}
@@ -35,7 +34,7 @@ else:
     {.passL: "-framework IOKit".}
     {.passL: "-framework Cocoa".}
   else:
-    {.compile: ("../../libui/unix/*.c", "unix_$#.obj").}
+    {.compile: ("./libui/unix/*.c", "unix_$#.obj").}
   when defined(gcc) and defined(windows):
     #{.passL: r"C:\Users\rumpf\projects\mingw64\x86_64-w64-mingw32\lib\liboleaut32.a".}
     {.passL: r"-lwinspool".}
