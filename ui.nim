@@ -336,6 +336,10 @@ type
   Separator* = ref object of Widget
     impl*: ptr rawui.Separator
 
+proc newVerticalSeparator*(): Separator =
+  newFinal result
+  result.impl = rawui.newVerticalSeparator()
+
 proc newHorizontalSeparator*(): Separator =
   newFinal result
   result.impl = rawui.newHorizontalSeparator()
