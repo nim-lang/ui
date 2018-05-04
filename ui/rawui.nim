@@ -119,6 +119,8 @@ type
     disable*: proc (a2: ptr Control) {.cdecl.}
 
 
+  DateTime* {.pure.} = object
+    year*, month*, day*, hour*, min*, seconds*: cint
 
 template toUiControl*(this: untyped): untyped =
   (cast[ptr Control]((this)))
@@ -434,6 +436,8 @@ type
 template toUiDateTimePicker*(this: untyped): untyped =
   (cast[ptr DateTimePicker]((this)))
 
+proc dateTimeSelected*(d: ptr DateTimePicker): DateTime {.cdecl,
+    importc: "uiDateTimeSelected",mylib.}
 proc newDateTimePicker*(): ptr DateTimePicker {.cdecl,
     importc: "uiNewDateTimePicker", mylib.}
 proc newDatePicker*(): ptr DateTimePicker {.cdecl, importc: "uiNewDatePicker",

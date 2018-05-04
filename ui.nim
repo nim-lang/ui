@@ -509,20 +509,21 @@ proc disable*[W: Widget](w: W) =
 
 # -------------------- DateTimePicker ------------------------------
 
-when false:
-  # XXX no way yet to get the date out of this?
-  type
-    DateTimePicker* = ref object of Widget
-      impl*: ptr rawui.DateTimePicker
+type
+  DateTimePicker* = ref object of Widget
+    impl*: ptr rawui.DateTimePicker
 
-  proc newDateTimePicker*(): DateTimePicker =
-    newFinal result
-    result.impl = rawui.newDateTimePicker()
+proc selectedDateTime*(dt: DateTimePicker): DateTime =
+  result = rawui.dateTimeSelected(dt.impl)
 
-  proc newDatePicker*(): DateTimePicker =
-    newFinal result
-    result.impl = rawui.newDatePicker()
+proc newDateTimePicker*(): DateTimePicker =
+  newFinal result
+  result.impl = rawui.newDateTimePicker()
 
-  proc newTimePicker*(): DateTimePicker =
-    newFinal result
-    result.impl = rawui.newTimePicker()
+proc newDatePicker*(): DateTimePicker =
+  newFinal result
+  result.impl = rawui.newDatePicker()
+
+proc newTimePicker*(): DateTimePicker =
+  newFinal result
+  result.impl = rawui.newTimePicker()
