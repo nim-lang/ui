@@ -5,7 +5,7 @@ author        = "Andreas Rumpf"
 description   = "Nim\'s official UI library"
 license       = "MIT"
 
-installDirs = @["ui"]
+installDirs = @["ui","res"]
 installFiles = @["ui.nim"]
 
 # Dependencies
