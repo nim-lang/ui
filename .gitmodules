@@ -1,3 +1,4 @@
 [submodule "ui/libui"]
 	path = ui/libui
-	url = https://github.com/Araq/libui
+	url = https://github.com/ba0f3/libui
+	branch = fix
