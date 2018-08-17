@@ -82,8 +82,10 @@ else:
     {.link: r"Usp10.lib".}
     {.link: r"..\res\resources.res".}
 
+import times
+
 type
-  ForEach* = enum
+  ForEach* {.size: sizeof(cint).} = enum
     ForEachContinue,
     ForEachStop,
 
@@ -436,7 +438,7 @@ proc radioButtonsOnSelected*(r: ptr RadioButtons; f: proc (a2: ptr RadioButtons;
 proc newRadioButtons*(): ptr RadioButtons {.cdecl, importc: "uiNewRadioButtons",
                                         mylib.}
 type
-  tm* {.bycopy.} = object
+  StructTm* = object
   DateTimePicker* = object of Control
 
 
@@ -444,10 +446,10 @@ template toUiDateTimePicker*(this: untyped): untyped =
   (cast[ptr DateTimePicker]((this)))
 
 proc dateTimePickerTime*(d: ptr DateTimePicker,
-                        time: ptr tm){.cdecl, importc: "uiDateTimePickerTime",
+                        time: ptr StructTm){.cdecl, importc: "uiDateTimePickerTime",
                         mylib.}
 proc dateTimePickerSetTime*(d: ptr DateTimePicker,
-                        time: ptr tm){.cdecl, importc: "uiDateTimePickerSetTime",
+                        time: ptr StructTm){.cdecl, importc: "uiDateTimePickerSetTime",
                         mylib.}
 proc dateTimePickerOnChanged*(d: ptr DateTimePicker,
                         f: proc (a1: ptr DateTimePicker; a2: pointer),
@@ -984,18 +986,30 @@ proc imageAppend*(i: ptr Image; pixels: pointer; pixelWidth: cint;
 
 type
     Table* = object of Control
-    TableValue* = object
+    TableValueType* {.size: sizeof(cint).} = enum
+        TableValueTypeString,
+        TableValueTypeImage,
+        TableValueTypeInt,
+        TableValueTypeColor
+
+    Color* {.bycopy.} = object
+        r*: cdouble
+        g*: cdouble
+        b*: cdouble
+        a*: cdouble
+
+    TableValueInner* {.bycopy.} = object {.union.}
+        str*: cstring
+        img*: ptr Image
+        i*: cint
+        color*: Color
+
+    TableValue* {.bycopy.} = object
+        kind*: TableValueType
+        u*: TableValueInner
     TableModel* = object
 
 proc freeTableValue*(v: ptr TableValue) {.cdecl, importc: "uiFreeTableValue", mylib.}
-
-type
-  TableValueType* = enum
-    TableValueTypeString,
-    TableValueTypeImage,
-    TableValueTypeInt,
-    TableValueTypeColor
-
 
 proc tableValueGetType*(v: ptr TableValue): TableValueType {.cdecl, importc: "uiTableValueGetType", mylib.}
 proc newTableValueString*(str: cstring): ptr TableValue {.cdecl, importc: "uiNewTableValueString", mylib.}
@@ -1003,19 +1017,23 @@ proc tableValueString*(v: ptr TableValue): cstring {.cdecl, importc: "uiTableVal
 proc newTableValueImage*(img: ptr Image): ptr TableValue {.cdecl, importc: "uiNewTableValueImage", mylib.}
 proc tableValueImage*(v: ptr TableValue): ptr Image {.cdecl, importc: "uiTableValueImage", mylib.}
 proc newTableValueInt*(i: cint): ptr TableValue {.cdecl, importc: "uiNewTableValueInt", mylib.}
-proc tableValueInt*(v: ptr TableValue): cint {.cdecl, importc: "uiTableValueInt", mylib.}
-proc newTableValueColor*(r: cdouble; g: cdouble; b: cdouble; a: cdouble): ptr TableValue {.cdecl, importc: "uiNewTableValueColor", mylib.}
-proc tableValueColor*(v: ptr TableValue; r: ptr cdouble; g: ptr cdouble;
-                       b: ptr cdouble; a: ptr cdouble) {.cdecl, importc: "uiTableValueColor", mylib.}
+proc tableValueInt*(v: ptr TableValue): int {.cdecl, importc: "uiTableValueInt", mylib.}
+proc newTableValueColor*(r: float; g: float; b: float; a: float): ptr TableValue {.cdecl, importc: "uiNewTableValueColor", mylib.}
+proc tableValueColor*(v: ptr TableValue; r: ptr float; g: ptr float;
+                       b: ptr float; a: ptr float) {.cdecl, importc: "uiTableValueColor", mylib.}
 type
-  TableModelHandler* {.bycopy.} = object
-    NumColumns*: proc (a1: ptr TableModelHandler; a2: ptr TableModel): cint
-    ColumnType*: proc (a1: ptr TableModelHandler; a2: ptr TableModel; a3: cint): TableValueType
-    NumRows*: proc (a1: ptr TableModelHandler; a2: ptr TableModel): cint
-    CellValue*: proc (mh: ptr TableModelHandler; m: ptr TableModel; row: cint;
-                    column: cint): ptr TableValue
-    SetCellValue*: proc (a1: ptr TableModelHandler; a2: ptr TableModel; a3: cint;
-                       a4: cint; a5: ptr TableValue)
+  TableNumColumns* = proc (a1: ptr TableModelHandler, a2: ptr rawui.TableModel): cint {.cdecl.}
+  TableColumnType* = proc (a1: ptr TableModelHandler, a2: ptr TableModel, a3: cint): TableValueType {.cdecl.}
+  TableNumRows* = proc (a1: ptr TableModelHandler, a2: ptr TableModel): cint {.cdecl.}
+  TableCellValue* = proc (mh: ptr TableModelHandler, m: ptr TableModel, row: int, column: int): ptr TableValue {.cdecl.}
+  TableSetCellValue* = proc (a1: ptr TableModelHandler, a2: ptr TableModel, a3: cint, a4: cint, a5: ptr TableValue) {.cdecl.}
+
+  TableModelHandler* = object
+    numColumns*: TableNumColumns
+    columnType*: TableColumnType
+    numRows*: TableNumRows
+    cellValue*: TableCellValue
+    setCellValue*: TableSetCellValue
 
 
 proc newTableModel*(mh: ptr TableModelHandler): ptr TableModel {.cdecl, importc: "uiNewTableModel", mylib.}
@@ -1032,15 +1050,15 @@ type
   TableTextColumnOptionalParams* {.bycopy.} = object
     ColorModelColumn*: cint
 
-  TableParams* {.bycopy.} = object
-    Model*: ptr TableModel
-    RowBackgroundColorModelColumn*: cint
+  TableParams* = object
+    model*: ptr TableModel
+    rowBackgroundColorModelColumn*: cint
 
 
 template toUiTable*(this: untyped): untyped =
   (cast[ptr Table]((this)))
 
-proc tTableAppendTextColumn*(t: ptr Table; name: cstring; textModelColumn: cint;
+proc tableAppendTextColumn*(t: ptr Table; name: cstring; textModelColumn: cint;
                              textEditableModelColumn: cint;
                              textParams: ptr TableTextColumnOptionalParams) {.cdecl, importc: "uiTableAppendTextColumn", mylib.}
 proc tableAppendImageColumn*(t: ptr Table; name: cstring; imageModelColumn: cint) {.cdecl, importc: "uiTableAppendImageColumn", mylib.}
@@ -1050,14 +1068,8 @@ proc tableAppendImageTextColumn*(t: ptr Table; name: cstring;
 proc tableAppendCheckboxColumn*(t: ptr Table; name: cstring;
                                  checkboxModelColumn: cint;
                                  checkboxEditableModelColumn: cint) {.cdecl, importc: "uiTableAppendCheckboxColumn", mylib.}
-proc tableAppendCheckboxTextColumn*(t: ptr Table; name: cstring;
-                                     checkboxModelColumn: cint;
-                                     checkboxEditableModelColumn: cint;
-                                     textModelColumn: cint;
-                                     textEditableModelColumn: cint; textParams: ptr TableTextColumnOptionalParams) {.cdecl, importc: "uiTableAppendCheckboxTextColumn", mylib.}
-proc tableAppendProgressBarColumn*(t: ptr Table; name: cstring;
-                                    progressModelColumn: cint) {.cdecl, importc: "uiTableAppendProgressBarColumn", mylib.}
-proc tableAppendButtonColumn*(t: ptr Table; name: cstring;
-                               buttonModelColumn: cint;
-                               buttonClickableModelColumn: cint) {.cdecl, importc: "uiTableAppendButtonColumn", mylib.}
+proc tableAppendCheckboxTextColumn*(t: ptr Table; name: cstring; checkboxModelColumn: cint; checkboxEditableModelColumn: cint;
+                                     textModelColumn: cint; textEditableModelColumn: cint; textParams: ptr TableTextColumnOptionalParams) {.cdecl,  importc: "uiTableAppendCheckboxTextColumn", mylib.}
+proc tableAppendProgressBarColumn*(t: ptr Table; name: cstring; progressModelColumn: cint) {.cdecl, importc: "uiTableAppendProgressBarColumn", mylib.}
+proc tableAppendButtonColumn*(t: ptr Table; name: cstring; buttonModelColumn: cint; buttonClickableModelColumn: cint) {.cdecl, importc: "uiTableAppendButtonColumn", mylib.}
 proc newTable*(params: ptr TableParams): ptr Table {.cdecl, importc: "uiNewTable", mylib.}

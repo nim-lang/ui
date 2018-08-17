@@ -489,6 +489,76 @@ proc newMenu*(name: string): Menu =
   result.impl = rawui.newMenu(name)
   result.children = @[]
 
+# -------------------- Image --------------------------------------
+
+type
+  Image* = ref object of Widget
+    impl*: ptr rawui.Image
+
+proc newImage*(width, height: float): Image =
+  newFinal result
+  result.impl = rawui.newImage(width.cdouble, height.cdouble)
+
+# -------------------- Table --------------------------------------
+
+export TableValueType, TableValue
+
+type
+  Table* = ref object of Widget
+    columns*: seq[TableValueType]
+    tableModelHandler*: TableModelHandler
+    impl*: ptr rawui.Table
+
+proc getTableNumColumnsProc(table: Table): TableNumColumns =
+  var s =  table.columns.len
+  proc cb(a1: ptr TableModelHandler, a2: ptr rawui.TableModel): cint {.cdecl.} =
+    5
+  return cb
+
+proc getTableColumnTypeProc(table: Table): TableColumnType =
+  proc cb(a1: ptr TableModelHandler, a2: ptr TableModel, a3: cint): TableValueType {.cdecl.} =
+    TableValueTypeString
+  return cb
+
+proc getTableNumRowsProc(table: Table): TableNumRows =
+  proc cb(a1: ptr TableModelHandler, a2: ptr TableModel): cint {.cdecl.} =
+    return 10
+  return cb
+
+proc getTableCellValueProc(table: Table): TableCellValue =
+  proc cb(mh: ptr TableModelHandler, m: ptr TableModel; row: int, column: int): ptr TableValue {.cdecl.} =
+    result = newTableValueString("hello row " & $row & " x col " & $column)
+  return cb
+
+proc getTableSetCellValueProc(table: Table): TableSetCellValue =
+  proc cb(a1: ptr TableModelHandler, a2: ptr TableModel, a3: cint, a4: cint, a5: ptr TableValue) {.cdecl.} =
+    echo "setCellValue"
+  return cb
+
+proc appendTextColumn*(table: Table, name: string, textModelColumn, textEditableModelColumn: int, textParams: ptr TableTextColumnOptionalParams) =
+  table.impl.tableAppendTextColumn(name, textModelColumn.cint, textEditableModelColumn.cint, textParams)
+
+proc newTableModel*() =
+  discard
+
+proc newTable*(columns: seq[TableValueType]): Table =
+  newFinal result
+
+  result.columns = columns
+
+  result.tableModelHandler.numColumns = getTableNumColumnsProc(result)
+  result.tableModelHandler.columnType = getTableColumnTypeProc(result)
+  result.tableModelHandler.numRows = getTableNumRowsProc(result)
+  result.tableModelHandler.cellValue  = getTableCellValueProc(result)
+  result.tableModelHandler.setCellValue = getTableSetCellValueProc(result)
+
+  var tableParams: TableParams
+  tableParams.model = newTableModel(addr result.tableModelHandler)
+  tableParams.rowBackgroundColorModelColumn = -1
+
+  result.impl = rawui.newTable(addr tableParams)
+
+
 # -------------------- Generics ------------------------------------
 
 proc show*[W: Widget](w: W) =
@@ -511,6 +581,8 @@ when false:
     DateTimePicker* = ref object of Widget
       impl*: ptr rawui.DateTimePicker
 
+  proc dateTimePickerTime*(p: DateTimePicker)
+
   proc newDateTimePicker*(): DateTimePicker =
     newFinal result
     result.impl = rawui.newDateTimePicker()
@@ -522,3 +594,7 @@ when false:
   proc newTimePicker*(): DateTimePicker =
     newFinal result
     result.impl = rawui.newTimePicker()
+
+  proc time*(P: DateTimePicker): StructTm = dateTimePickerTime(P.impl, addr result)
+  proc `time=`*(P: DateTimePicker, time: ptr StructTm) = dateTimePickerSetTime(P.impl, time)
+  #proc onchanged*(P: DateTimePicker)
