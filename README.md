@@ -22,13 +22,6 @@ Linux: `$ sudo apt-get install libgtk-3-dev`
 
 OSX: `$ brew install gtk+3`
 
-Windows:
-- Install: http://www.msys2.org/
-- `$ pacman -Ss gtk3`
-- `$ pacman -S mingw-w64-x86_64-gtk3 --force` for `x64`
-- `$ pacman -S mingw-w64-i686-gtk3 --force` for `x32`
-- Add `C:\msys64\mingw64\bin` and `\lib` in the path variable.
-
 
 You should then be able to compile the sample code in the
 [``examples/``](https://github.com/nim-lang/ui/tree/master/examples)
