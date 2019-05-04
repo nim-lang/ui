@@ -1,4 +1,4 @@
-    when defined(useLibUiDll):
+when defined(useLibUiDll):
   when defined(windows):
     const
       dllName* = "libui.dll"
@@ -986,7 +986,7 @@ proc imageAppend*(i: ptr Image; pixels: pointer; pixelWidth: cint;
 
 type
     Table* = object of Control
-    TableValueType* {.size: sizeof(cint).} = enum
+    TableValueType* = enum
         TableValueTypeString,
         TableValueTypeImage,
         TableValueTypeInt,
@@ -1007,28 +1007,32 @@ type
     TableValue* {.bycopy.} = object
         kind*: TableValueType
         u*: TableValueInner
-    TableModel* = object
+    TableModel* = pointer
 
 proc freeTableValue*(v: ptr TableValue) {.cdecl, importc: "uiFreeTableValue", mylib.}
 
 proc tableValueGetType*(v: ptr TableValue): TableValueType {.cdecl, importc: "uiTableValueGetType", mylib.}
+
 proc newTableValueString*(str: cstring): ptr TableValue {.cdecl, importc: "uiNewTableValueString", mylib.}
 proc tableValueString*(v: ptr TableValue): cstring {.cdecl, importc: "uiTableValueString", mylib.}
+
 proc newTableValueImage*(img: ptr Image): ptr TableValue {.cdecl, importc: "uiNewTableValueImage", mylib.}
 proc tableValueImage*(v: ptr TableValue): ptr Image {.cdecl, importc: "uiTableValueImage", mylib.}
+
 proc newTableValueInt*(i: cint): ptr TableValue {.cdecl, importc: "uiNewTableValueInt", mylib.}
 proc tableValueInt*(v: ptr TableValue): int {.cdecl, importc: "uiTableValueInt", mylib.}
+
 proc newTableValueColor*(r: float; g: float; b: float; a: float): ptr TableValue {.cdecl, importc: "uiNewTableValueColor", mylib.}
 proc tableValueColor*(v: ptr TableValue; r: ptr float; g: ptr float;
                        b: ptr float; a: ptr float) {.cdecl, importc: "uiTableValueColor", mylib.}
 type
-  TableNumColumns* = proc (a1: ptr TableModelHandler, a2: ptr rawui.TableModel): cint {.cdecl.}
-  TableColumnType* = proc (a1: ptr TableModelHandler, a2: ptr TableModel, a3: cint): TableValueType {.cdecl.}
-  TableNumRows* = proc (a1: ptr TableModelHandler, a2: ptr TableModel): cint {.cdecl.}
-  TableCellValue* = proc (mh: ptr TableModelHandler, m: ptr TableModel, row: int, column: int): ptr TableValue {.cdecl.}
-  TableSetCellValue* = proc (a1: ptr TableModelHandler, a2: ptr TableModel, a3: cint, a4: cint, a5: ptr TableValue) {.cdecl.}
+  TableNumColumns* = proc (mh: ptr TableModelHandler, m: TableModel): int {.cdecl.}
+  TableColumnType* = proc (mh: ptr TableModelHandler, m: TableModel, col: int): TableValueType {.noconv.}
+  TableNumRows* = proc (mh: ptr TableModelHandler, m: TableModel): int {.cdecl.}
+  TableCellValue* = proc (mh: ptr TableModelHandler, m: TableModel, row, col: int): ptr TableValue {.noconv.}
+  TableSetCellValue* = proc (mh: ptr TableModelHandler, m: TableModel, row, col: int, val: ptr TableValue) {.cdecl.}
 
-  TableModelHandler* = object
+  TableModelHandler* {.pure.} = object
     numColumns*: TableNumColumns
     columnType*: TableColumnType
     numRows*: TableNumRows
@@ -1036,22 +1040,19 @@ type
     setCellValue*: TableSetCellValue
 
 
-proc newTableModel*(mh: ptr TableModelHandler): ptr TableModel {.cdecl, importc: "uiNewTableModel", mylib.}
-proc freeTableModel*(m: ptr TableModel) {.cdecl, importc: "uiFreeTableModel", mylib.}
-proc tableModelRowInserted*(m: ptr TableModel; newIndex: cint) {.cdecl, importc: "uiTableModelRowInserted", mylib.}
-proc tableModelRowChanged*(m: ptr TableModel; index: cint) {.cdecl, importc: "uiTableModelRowChanged", mylib.}
-proc tableModelRowDeleted*(m: ptr TableModel; oldIndex: cint) {.cdecl, importc: "uiTableModelRowDeleted", mylib.}
+proc newTableModel*(mh: ptr TableModelHandler): TableModel {.cdecl, importc: "uiNewTableModel", mylib.}
+proc freeTableModel*(m: TableModel) {.cdecl, importc: "uiFreeTableModel", mylib.}
+proc tableModelRowInserted*(m: TableModel; newIndex: cint) {.cdecl, importc: "uiTableModelRowInserted", mylib.}
+proc tableModelRowChanged*(m: TableModel; index: cint) {.cdecl, importc: "uiTableModelRowChanged", mylib.}
+proc tableModelRowDeleted*(m: TableModel; oldIndex: cint) {.cdecl, importc: "uiTableModelRowDeleted", mylib.}
 
-const
-  TableModelColumnNeverEditable* = (-1)
-  TableModelColumnAlwaysEditable* = (-2)
 
 type
   TableTextColumnOptionalParams* {.bycopy.} = object
-    ColorModelColumn*: cint
+    ColorModelColumn*: int
 
   TableParams* = object
-    model*: ptr TableModel
+    model*: TableModel
     rowBackgroundColorModelColumn*: cint
 
 

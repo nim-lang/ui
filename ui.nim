@@ -501,62 +501,63 @@ proc newImage*(width, height: float): Image =
 
 # -------------------- Table --------------------------------------
 
-export TableValueType, TableValue
+export TableModelHandler, TableModel, TableParams, TableTextColumnOptionalParams, TableColumnType, TableValueType, TableValue
+export newTableModel, freeTableModel
+
+const
+  TableModelColumnNeverEditable* = (-1)
+  TableModelColumnAlwaysEditable* = (-2)
+
 
 type
   Table* = ref object of Widget
-    columns*: seq[TableValueType]
-    tableModelHandler*: TableModelHandler
     impl*: ptr rawui.Table
 
-proc getTableNumColumnsProc(table: Table): TableNumColumns =
-  var s =  table.columns.len
-  proc cb(a1: ptr TableModelHandler, a2: ptr rawui.TableModel): cint {.cdecl.} =
-    5
-  return cb
 
-proc getTableColumnTypeProc(table: Table): TableColumnType =
-  proc cb(a1: ptr TableModelHandler, a2: ptr TableModel, a3: cint): TableValueType {.cdecl.} =
-    TableValueTypeString
-  return cb
+proc tableValueGetType*(v: ptr TableValue): TableValueType {.inline.} = rawui.tableValueGetType(v)
 
-proc getTableNumRowsProc(table: Table): TableNumRows =
-  proc cb(a1: ptr TableModelHandler, a2: ptr TableModel): cint {.cdecl.} =
-    return 10
-  return cb
+proc newTableValueString*(s: string): ptr TableValue {.inline.} = rawui.newTableValueString(s.cstring)
+proc tableValueString*(v: ptr TableValue): string {.inline.} = $rawui.tableValueString(v)
 
-proc getTableCellValueProc(table: Table): TableCellValue =
-  proc cb(mh: ptr TableModelHandler, m: ptr TableModel; row: int, column: int): ptr TableValue {.cdecl.} =
-    result = newTableValueString("hello row " & $row & " x col " & $column)
-  return cb
-
-proc getTableSetCellValueProc(table: Table): TableSetCellValue =
-  proc cb(a1: ptr TableModelHandler, a2: ptr TableModel, a3: cint, a4: cint, a5: ptr TableValue) {.cdecl.} =
-    echo "setCellValue"
-  return cb
-
-proc appendTextColumn*(table: Table, name: string, textModelColumn, textEditableModelColumn: int, textParams: ptr TableTextColumnOptionalParams) =
-  table.impl.tableAppendTextColumn(name, textModelColumn.cint, textEditableModelColumn.cint, textParams)
-
-proc newTableModel*() =
-  discard
-
-proc newTable*(columns: seq[TableValueType]): Table =
+proc newTableValueImage*(img: Image): ptr TableValue = rawui.newTableValueImage(img.impl)
+proc tableValueImage*(v: ptr TableValue): Image =
   newFinal result
+  result.impl = rawui.tableValueImage(v)
 
-  result.columns = columns
+proc newTableValueInt*(i: int): ptr TableValue {.inline.} = rawui.newTableValueInt(i.cint)
+proc tableValueInt*(v: ptr TableValue): int {.inline.} = rawui.tableValueInt(v)
 
-  result.tableModelHandler.numColumns = getTableNumColumnsProc(result)
-  result.tableModelHandler.columnType = getTableColumnTypeProc(result)
-  result.tableModelHandler.numRows = getTableNumRowsProc(result)
-  result.tableModelHandler.cellValue  = getTableCellValueProc(result)
-  result.tableModelHandler.setCellValue = getTableSetCellValueProc(result)
+proc newTableValueColor*(r: float; g: float; b: float; a: float): ptr TableValue {.inline.} = rawui.newTableValueColor(r, g, b, a)
+proc tableValueColor*(v: ptr TableValue; r: ptr float; g: ptr float;
+                      b: ptr float; a: ptr float) {.inline.} = rawui.tableValueColor(v, r, g, b, a)
 
-  var tableParams: TableParams
-  tableParams.model = newTableModel(addr result.tableModelHandler)
-  tableParams.rowBackgroundColorModelColumn = -1
 
-  result.impl = rawui.newTable(addr tableParams)
+proc rowInserted*(m: TableModel; newIndex: int) {.inline.} = rawui.tableModelRowInserted(m, newIndex.cint)
+proc rowChanged*(m: TableModel; index: int) {.inline.} = rawui.tableModelRowChanged(m, index.cint)
+proc rowDeleted*(m: TableModel; oldIndex: int) {.inline.} = rawui.tableModelRowDeleted(m, oldIndex.cint)
+
+
+proc appendTextColumn*(table: Table, title: string, index, editableMode: int, textParams: ptr TableTextColumnOptionalParams) =
+  table.impl.tableAppendTextColumn(title, index.cint, editableMode.cint, textParams)
+
+proc appendImageColumn*(table: Table, title: string, index: int) =
+  table.impl.tableAppendImageColumn(title, index.cint)
+
+proc appendImageTextColumn*(table: Table, title: string, imageIndex, textIndex, editableMode: int, textParams: ptr TableTextColumnOptionalParams) =
+  table.impl.tableAppendImageTextColumn(title, imageIndex.cint, textIndex.cint, editableMode.cint, textParams)
+
+proc appendCheckboxColumn*(table: Table, title: string, index, editableMode: int) =
+  table.impl.tableAppendCheckboxColumn(title, index.cint, editableMode.cint)
+
+proc appendProgressBarColumn*(table: Table, title: string, index: int) =
+  table.impl.tableAppendProgressBarColumn(title, index.cint)
+
+proc appendButtonColumn*(table: Table, title: string, index, clickableMode: int) =
+  table.impl.tableAppendButtonColumn(title, index.cint, clickableMode.cint)
+
+proc newTable*(params: ptr TableParams): Table =
+  newFinal result
+  result.impl = rawui.newTable(params)
 
 
 # -------------------- Generics ------------------------------------

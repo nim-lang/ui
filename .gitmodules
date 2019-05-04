@@ -1,4 +1,4 @@
 [submodule "ui/libui"]
 	path = ui/libui
-	url = https://github.com/andlabs/libui.git
+	url = https://github.com/ba0f3/libui.git
 	branch = master
