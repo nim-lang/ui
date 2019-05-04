@@ -15,6 +15,14 @@ or add it to your project's Nimble file:
 requires "ui"
 ```
 
+### Dependencies
+- `gtk+-3.0`
+
+Linux: `$ sudo apt-get install libgtk-3-dev`
+
+OSX: `$ brew install gtk+3`
+
+
 You should then be able to compile the sample code in the
 [``examples/``](https://github.com/nim-lang/ui/tree/master/examples)
 directory successfully.
