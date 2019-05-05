@@ -998,7 +998,7 @@ type
         b*: cdouble
         a*: cdouble
 
-    TableValueInner* {.bycopy.} = object {.union.}
+    TableValueInner* {.bycopy, union.} = object
         str*: cstring
         img*: ptr Image
         i*: cint
