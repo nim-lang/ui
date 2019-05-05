@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.9.2"
+version       = "0.9.3"
 author        = "Andreas Rumpf"
 description   = "Nim\'s official UI library"
 license       = "MIT"
@@ -10,5 +10,5 @@ installFiles = @["ui.nim"]
 
 # Dependencies
 
-requires "nim >= 0.16.1"
+requires "nim >= 0.19.4"
 

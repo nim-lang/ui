@@ -82,7 +82,13 @@ else:
     {.link: r"Usp10.lib".}
     {.link: r"..\res\resources.res".}
 
+import times
+
 type
+  ForEach* {.size: sizeof(cint).} = enum
+    ForEachContinue,
+    ForEachStop,
+
   InitOptions* = object
     size*: csize
 
@@ -98,6 +104,10 @@ proc mainStep*(wait: cint): cint {.cdecl, importc: "uiMainStep", mylib.}
 proc quit*() {.cdecl, importc: "uiQuit", mylib.}
 proc queueMain*(f: proc (data: pointer) {.cdecl.}; data: pointer) {.cdecl,
     importc: "uiQueueMain", mylib.}
+
+proc timer*(milliseconds: cint, f: proc (data: pointer): cint {.cdecl.}; data: pointer) {.cdecl,
+    importc: "uiTimer", mylib.}
+
 proc onShouldQuit*(f: proc (data: pointer): cint {.cdecl.}; data: pointer) {.cdecl,
     importc: "uiOnShouldQuit", mylib.}
 proc freeText*(text: cstring) {.cdecl, importc: "uiFreeText", mylib.}
@@ -428,12 +438,23 @@ proc radioButtonsOnSelected*(r: ptr RadioButtons; f: proc (a2: ptr RadioButtons;
 proc newRadioButtons*(): ptr RadioButtons {.cdecl, importc: "uiNewRadioButtons",
                                         mylib.}
 type
+  StructTm* = object
   DateTimePicker* = object of Control
 
 
 template toUiDateTimePicker*(this: untyped): untyped =
   (cast[ptr DateTimePicker]((this)))
 
+proc dateTimePickerTime*(d: ptr DateTimePicker,
+                        time: ptr StructTm){.cdecl, importc: "uiDateTimePickerTime",
+                        mylib.}
+proc dateTimePickerSetTime*(d: ptr DateTimePicker,
+                        time: ptr StructTm){.cdecl, importc: "uiDateTimePickerSetTime",
+                        mylib.}
+proc dateTimePickerOnChanged*(d: ptr DateTimePicker,
+                        f: proc (a1: ptr DateTimePicker; a2: pointer),
+                        data: pointer){.cdecl, importc: "uiDateTimePickerOnChanged",
+                        mylib.}
 proc newDateTimePicker*(): ptr DateTimePicker {.cdecl,
     importc: "uiNewDateTimePicker", mylib.}
 proc newDatePicker*(): ptr DateTimePicker {.cdecl, importc: "uiNewDatePicker",
@@ -715,107 +736,184 @@ proc drawRestore*(c: ptr DrawContext) {.cdecl, importc: "uiDrawRestore",
                                     mylib.}
 
 type
-  DrawFontFamilies* = object
+  Attribute* = object
+  AttributedString* = object
 
 
-proc drawListFontFamilies*(): ptr DrawFontFamilies {.cdecl,
-    importc: "uiDrawListFontFamilies", mylib.}
-proc drawFontFamiliesNumFamilies*(ff: ptr DrawFontFamilies): cint {.cdecl,
-    importc: "uiDrawFontFamiliesNumFamilies", mylib.}
-proc drawFontFamiliesFamily*(ff: ptr DrawFontFamilies; n: cint): cstring {.cdecl,
-    importc: "uiDrawFontFamiliesFamily", mylib.}
-proc drawFreeFontFamilies*(ff: ptr DrawFontFamilies) {.cdecl,
-    importc: "uiDrawFreeFontFamilies", mylib.}
+proc freeAttribute*(a1: ptr Attribute): cstring {.cdecl,
+    importc: "uiFreeAttribute", mylib.}
 
 type
-  DrawTextLayout* = object
+    AttributeType* {.size: sizeof(cint).} = enum
+        AttributeTypeFamily, AttributeTypeSize, AttributeTypeWeight,
+        AttributeTypeItalic, AttributeTypeStretch, AttributeTypeColor,
+        AttributeTypeBackground, AttributeTypeUnderline, AttributeTypeUnderlineColor,
+        AttributeTypeFeatures
 
+proc AttributeGetType*(a: ptr Attribute): AttributeType {.cdecl,
+    importc: "uiAttributeGetType", mylib.}
+
+proc newFamilyAttribute*(family: cstring): ptr Attribute {.cdecl,
+importc: "uiNewFamilyAttribute", mylib.}
+
+proc attributeFamily*(a: ptr Attribute): cstring {.cdecl,
+importc: "uiAttributeFamily", mylib.}
+
+proc newSizeAttribute*(size: cdouble): ptr Attribute {.cdecl,
+importc: "uiNewSizeAttribute", mylib.}
+
+proc attributeSize*(a: ptr Attribute): cdouble {.cdecl,
+importc: "uiAttributeSize", mylib.}
+
+type
   DrawTextFont* = object
 
-  DrawTextWeight* {.size: sizeof(cint).} = enum
-    DrawTextWeightThin, DrawTextWeightUltraLight, DrawTextWeightLight,
-    DrawTextWeightBook, DrawTextWeightNormal, DrawTextWeightMedium,
-    DrawTextWeightSemiBold, DrawTextWeightBold, DrawTextWeightUltraBold,
-    DrawTextWeightHeavy, DrawTextWeightUltraHeavy
+  TextWeight* {.size: sizeof(cint).} = enum
+    TextWeightMinimum = 0
+    TextWeightThin = 100
+    TextWeightUltraLight = 200
+    TextWeightLight = 300
+    TextWeightBook = 350
+    TextWeightNormal = 400
+    TextWeightMedium = 500
+    TextWeightSemiBold = 600
+    TextWeightBold = 700
+    TextWeightUltraBold = 800
+    TextWeightHeavy = 900
+    TextWeightUltraHeavy = 950
+    TextWeightMaximum = 1000
 
+proc newWeightAttribute*(weight: TextWeight): ptr Attribute {.cdecl,
+    importc: "uiNewWeightAttribute", mylib.}
+proc attributeWeight*(a: ptr Attribute): TextWeight {.cdecl,
+    importc: "uiAttributeWeight", mylib.}
 
 type
-  DrawTextItalic* {.size: sizeof(cint).} = enum
-    DrawTextItalicNormal, DrawTextItalicOblique, DrawTextItalicItalic
+  TextItalic* {.size: sizeof(cint).} = enum
+    TextItalicNormal, TextItalicOblique, TextItalicItalic
 
-
-type
-  DrawTextStretch* {.size: sizeof(cint).} = enum
-    DrawTextStretchUltraCondensed, DrawTextStretchExtraCondensed,
-    DrawTextStretchCondensed, DrawTextStretchSemiCondensed, DrawTextStretchNormal,
-    DrawTextStretchSemiExpanded, DrawTextStretchExpanded,
-    DrawTextStretchExtraExpanded, DrawTextStretchUltraExpanded
-
+proc newItalicAttribute*(italic: TextItalic): ptr Attribute {.cdecl,
+    importc: "uiNewItalicAttribute", mylib.}
+proc attributeItalic*(a: ptr Attribute): TextItalic {.cdecl,
+    importc: "uiAttributeItalic", mylib.}
 
 type
-  DrawTextFontDescriptor* = object
+  TextStretch* {.size: sizeof(cint).} = enum
+    TextStretchUltraCondensed, TextStretchExtraCondensed,
+    TextStretchCondensed, TextStretchSemiCondensed, TextStretchNormal,
+    TextStretchSemiExpanded, TextStretchExpanded,
+    TextStretchExtraExpanded, TextStretchUltraExpanded
+
+proc newStretchAttribute*(stretch: TextStretch): ptr Attribute {.cdecl,
+    importc: "uiNewStretchAttribute", mylib.}
+proc attributeStretch*(a: ptr Attribute): TextStretch {.cdecl,
+    importc: "uiAttributeStretch", mylib.}
+proc newColorAttribute*(r: cdouble; g: cdouble; b: cdouble; a: cdouble): ptr Attribute {.cdecl,
+    importc: "uiNewColorAttribute", mylib.}
+proc attributeColor*(a: ptr Attribute; r: ptr cdouble; g: ptr cdouble; b: ptr cdouble;
+                    alpha: ptr cdouble) {.cdecl,
+                    importc: "uiAttributeColor", mylib.}
+proc newBackgroundAttribute*(r: cdouble; g: cdouble; b: cdouble; a: cdouble): ptr Attribute {.cdecl,
+    importc: "uiNewBackgroundAttribute", mylib.}
+
+type
+    Underline* {.size: sizeof(cint).} = enum
+        UnderlineNone, UnderlineSingle,
+        UnderlineDouble, UnderlineSuggestion
+
+proc newUnderlineAttribute*(u: Underline): ptr Attribute {.cdecl, importc: "uiNewUnderlineAttribute", mylib.}
+proc attributeUnderline*(a: ptr Attribute): Underline {.cdecl, importc: "uiAttributeUnderline", mylib.}
+
+type
+    UnderlineColor* {.size: sizeof(cint).} = enum
+        UnderlineColorCustom, UnderlineColorSpelling,
+        UnderlineColorGrammar, UnderlineColorAuxiliary
+
+proc newUnderlineColorAttribute*(u: UnderlineColor; r: cdouble; g: cdouble;
+                                    b: cdouble; a: cdouble): ptr Attribute {.cdecl, importc: "uiNewUnderlineColorAttribute", mylib.}
+proc attributeUnderlineColor*(a: ptr Attribute; u: ptr UnderlineColor;
+                                r: ptr cdouble; g: ptr cdouble; b: ptr cdouble;
+                                alpha: ptr cdouble) {.cdecl, importc: "uiAttributeUnderlineColor", mylib.}
+type
+    OpenTypeFeatures* = object
+    OpenTypeFeaturesForEachFunc* = proc (otf: ptr OpenTypeFeatures; a: char; b: char;
+                                        c: char; d: char; value: uint32; data: pointer): ForEach
+
+proc newOpenTypeFeatures*(): ptr OpenTypeFeatures {.cdecl, importc: "uiNewOpenTypeFeatures", mylib.}
+proc freeOpenTypeFeatures*(otf: ptr OpenTypeFeatures) {.cdecl, importc: "uiFreeOpenTypeFeatures", mylib.}
+proc openTypeFeaturesClone*(otf: ptr OpenTypeFeatures): ptr OpenTypeFeatures {.cdecl, importc: "uiOpenTypeFeaturesClone", mylib.}
+proc openTypeFeaturesAdd*(otf: ptr OpenTypeFeatures; a: char; b: char; c: char;
+                            d: char; value: uint32) {.cdecl, importc: "uiOpenTypeFeaturesAdd", mylib.}
+proc openTypeFeaturesRemove*(otf: ptr OpenTypeFeatures; a: char; b: char; c: char;
+                                d: char) {.cdecl, importc: "uiOpenTypeFeaturesRemove", mylib.}
+proc openTypeFeaturesGet*(otf: ptr OpenTypeFeatures; a: char; b: char; c: char;
+                            d: char; value: ptr uint32): cint {.cdecl, importc: "uiOpenTypeFeaturesGet", mylib.}
+proc openTypeFeaturesForEach*(otf: ptr OpenTypeFeatures;
+                                f: OpenTypeFeaturesForEachFunc; data: pointer) {.cdecl, importc: "uiOpenTypeFeaturesForEach", mylib.}
+proc newFeaturesAttribute*(otf: ptr OpenTypeFeatures): ptr Attribute {.cdecl, importc: "uiNewFeaturesAttribute", mylib.}
+proc attributeFeatures*(a: ptr Attribute): ptr OpenTypeFeatures {.cdecl, importc: "uiAttributeFeatures", mylib.}
+
+type
+    AttributedStringForEachAttributeFunc* = proc (s: ptr AttributedString;
+        a: ptr Attribute; start: csize; `end`: csize; data: pointer): ForEach
+
+proc newAttributedString*(initialString: cstring): ptr AttributedString {.cdecl, importc: "uiNewAttributedString", mylib.}
+proc freeAttributedString*(s: ptr AttributedString) {.cdecl, importc: "uiFreeAttributedString", mylib.}
+proc attributedStringString*(s: ptr AttributedString): cstring {.cdecl, importc: "uiAttributedStringString", mylib.}
+proc attributedStringLen*(s: ptr AttributedString): csize {.cdecl, importc: "uiAttributedStringLen", mylib.}
+proc attributedStringAppendUnattributed*(s: ptr AttributedString; str: cstring) {.cdecl, importc: "uiAttributedStringAppendUnattributed", mylib.}
+proc attributedStringInsertAtUnattributed*(s: ptr AttributedString;
+    str: cstring; at: csize) {.cdecl, importc: "uiAttributedStringInsertAtUnattributed", mylib.}
+proc attributedStringDelete*(s: ptr AttributedString; start: csize; `end`: csize) {.cdecl, importc: "uiAttributedStringDelete", mylib.}
+proc attributedStringSetAttribute*(s: ptr AttributedString; a: ptr Attribute;
+                                    start: csize; `end`: csize) {.cdecl, importc: "uiAttributedStringSetAttribute", mylib.}
+proc attributedStringForEachAttribute*(s: ptr AttributedString; f: AttributedStringForEachAttributeFunc;
+                                        data: pointer) {.cdecl, importc: "uiDruiAttributedStringForEachAttributeawSave", mylib.}
+proc attributedStringNumGraphemes*(s: ptr AttributedString): csize {.cdecl, importc: "uiAttributedStringNumGraphemes", mylib.}
+proc attributedStringByteIndexToGrapheme*(s: ptr AttributedString; pos: csize): csize {.cdecl, importc: "uiAttributedStringByteIndexToGrapheme", mylib.}
+proc attributedStringGraphemeToByteIndex*(s: ptr AttributedString; pos: csize): csize {.cdecl, importc: "uiAttributedStringGraphemeToByteIndex", mylib.}
+
+type
+  FontDescriptor* = object
     family*: cstring
     size*: cdouble
-    weight*: DrawTextWeight
-    italic*: DrawTextItalic
-    stretch*: DrawTextStretch
+    weight*: TextWeight
+    italic*: TextItalic
+    stretch*: TextStretch
 
-  DrawTextFontMetrics* = object
-    ascent*: cdouble
-    descent*: cdouble
-    leading*: cdouble
-    underlinePos*: cdouble
-    underlineThickness*: cdouble
-
-
-proc drawLoadClosestFont*(desc: ptr DrawTextFontDescriptor): ptr DrawTextFont {.cdecl,
-    importc: "uiDrawLoadClosestFont", mylib.}
-proc drawFreeTextFont*(font: ptr DrawTextFont) {.cdecl,
-    importc: "uiDrawFreeTextFont", mylib.}
-proc drawTextFontHandle*(font: ptr DrawTextFont): int {.cdecl,
-    importc: "uiDrawTextFontHandle", mylib.}
-proc drawTextFontDescribe*(font: ptr DrawTextFont; desc: ptr DrawTextFontDescriptor) {.
-    cdecl, importc: "uiDrawTextFontDescribe", mylib.}
-
-proc drawTextFontGetMetrics*(font: ptr DrawTextFont;
-                            metrics: ptr DrawTextFontMetrics) {.cdecl,
-    importc: "uiDrawTextFontGetMetrics", mylib.}
-
-proc drawNewTextLayout*(text: cstring; defaultFont: ptr DrawTextFont; width: cdouble): ptr DrawTextLayout {.
-    cdecl, importc: "uiDrawNewTextLayout", mylib.}
-proc drawFreeTextLayout*(layout: ptr DrawTextLayout) {.cdecl,
-    importc: "uiDrawFreeTextLayout", mylib.}
-
-proc drawTextLayoutSetWidth*(layout: ptr DrawTextLayout; width: cdouble) {.cdecl,
-    importc: "uiDrawTextLayoutSetWidth", mylib.}
-proc drawTextLayoutExtents*(layout: ptr DrawTextLayout; width: ptr cdouble;
-                           height: ptr cdouble) {.cdecl,
-    importc: "uiDrawTextLayoutExtents", mylib.}
-
-proc drawTextLayoutSetColor*(layout: ptr DrawTextLayout; startChar: cint;
-                            endChar: cint; r: cdouble; g: cdouble; b: cdouble;
-                            a: cdouble) {.cdecl,
-                                        importc: "uiDrawTextLayoutSetColor",
-                                        mylib.}
-proc drawText*(c: ptr DrawContext; x: cdouble; y: cdouble; layout: ptr DrawTextLayout) {.
-    cdecl, importc: "uiDrawText", mylib.}
 type
-  FontButton* = object of Control
+    DrawTextLayout* = object
+    DrawTextAlign* {.size: sizeof(cint).} = enum
+        DrawTextAlignLeft,
+        DrawTextAlignCenter
+        DrawTextAlignRight
 
+    DrawTextLayoutParams* {.bycopy.} = object
+        str*: ptr AttributedString
+        defaultFont*: ptr FontDescriptor
+        width*: cdouble
+        align*: DrawTextAlign
+
+proc drawNewTextLayout*(params: ptr DrawTextLayoutParams): ptr DrawTextLayout {.
+    cdecl, importc: "uiDrawNewTextLayout", mylib.}
+
+proc drawFreeTextLayout*(tl: ptr DrawTextLayout) {.cdecl, importc: "uiDrawFreeTextLayout", mylib.}
+proc drawText*(c: ptr DrawContext; tl: ptr DrawTextLayout; x: cdouble; y: cdouble) {.cdecl, importc: "uiDrawText", mylib.}
+proc drawTextLayoutExtents*(tl: ptr DrawTextLayout; width: ptr cdouble;
+                                height: ptr cdouble) {.cdecl, importc: "uiDrawTextLayoutExtents", mylib.}
+
+type
+    FontButton* = object of Control
 
 template toUiFontButton*(this: untyped): untyped =
-  (cast[ptr FontButton]((this)))
+    (cast[ptr FontButton]((this)))
 
+proc fontButtonFont*(b: ptr FontButton; desc: ptr FontDescriptor) {.cdecl, importc: "uiFontButtonFont", mylib.}
+proc fontButtonOnChanged*(b: ptr FontButton,
+                            f: proc (a1: ptr FontButton; a2: pointer); data: pointer) {.cdecl, importc: "uiFontButtonOnChanged", mylib.}
+proc newFontButton*(): ptr FontButton {.cdecl, importc: "uiNewFontButton", mylib.}
+proc freeFontButtonFont*(desc: ptr FontDescriptor) {.cdecl, importc: "uiFreeFontButtonFont", mylib.}
 
-proc fontButtonFont*(b: ptr FontButton): ptr DrawTextFont {.cdecl,
-    importc: "uiFontButtonFont", mylib.}
-
-proc fontButtonOnChanged*(b: ptr FontButton;
-                         f: proc (a2: ptr FontButton; a3: pointer) {.cdecl.};
-                         data: pointer) {.cdecl, importc: "uiFontButtonOnChanged",
-                                        mylib.}
-proc newFontButton*(): ptr FontButton {.cdecl, importc: "uiNewFontButton",
-                                    mylib.}
 type
   ColorButton* = object of Control
 
@@ -877,3 +975,102 @@ proc gridPadded*(g: ptr Grid): cint {.cdecl, importc: "uiGridPadded", mylib.}
 proc gridSetPadded*(g: ptr Grid; padded: cint) {.cdecl, importc: "uiGridSetPadded",
     mylib.}
 proc newGrid*(): ptr Grid {.cdecl, importc: "uiNewGrid", mylib.}
+
+type
+    Image* = object
+
+proc newImage*(width: cdouble; height: cdouble): ptr Image {.cdecl, importc: "uiNewImage", mylib.}
+proc freeImage*(i: ptr Image) {.cdecl, importc: "uiFreeImage", mylib.}
+proc imageAppend*(i: ptr Image; pixels: pointer; pixelWidth: cint;
+                   pixelHeight: cint; byteStride: cint) {.cdecl, importc: "uiImageAppend", mylib.}
+
+type
+    Table* = object of Control
+    TableValueType* = enum
+        TableValueTypeString,
+        TableValueTypeImage,
+        TableValueTypeInt,
+        TableValueTypeColor
+
+    Color* {.bycopy.} = object
+        r*: cdouble
+        g*: cdouble
+        b*: cdouble
+        a*: cdouble
+
+    TableValueInner* {.bycopy.} = object {.union.}
+        str*: cstring
+        img*: ptr Image
+        i*: cint
+        color*: Color
+
+    TableValue* {.bycopy.} = object
+        kind*: TableValueType
+        u*: TableValueInner
+    TableModel* = pointer
+
+proc freeTableValue*(v: ptr TableValue) {.cdecl, importc: "uiFreeTableValue", mylib.}
+
+proc tableValueGetType*(v: ptr TableValue): TableValueType {.cdecl, importc: "uiTableValueGetType", mylib.}
+
+proc newTableValueString*(str: cstring): ptr TableValue {.cdecl, importc: "uiNewTableValueString", mylib.}
+proc tableValueString*(v: ptr TableValue): cstring {.cdecl, importc: "uiTableValueString", mylib.}
+
+proc newTableValueImage*(img: ptr Image): ptr TableValue {.cdecl, importc: "uiNewTableValueImage", mylib.}
+proc tableValueImage*(v: ptr TableValue): ptr Image {.cdecl, importc: "uiTableValueImage", mylib.}
+
+proc newTableValueInt*(i: cint): ptr TableValue {.cdecl, importc: "uiNewTableValueInt", mylib.}
+proc tableValueInt*(v: ptr TableValue): int {.cdecl, importc: "uiTableValueInt", mylib.}
+
+proc newTableValueColor*(r: float; g: float; b: float; a: float): ptr TableValue {.cdecl, importc: "uiNewTableValueColor", mylib.}
+proc tableValueColor*(v: ptr TableValue; r: ptr float; g: ptr float;
+                       b: ptr float; a: ptr float) {.cdecl, importc: "uiTableValueColor", mylib.}
+type
+  TableNumColumns* = proc (mh: ptr TableModelHandler, m: TableModel): int {.cdecl.}
+  TableColumnType* = proc (mh: ptr TableModelHandler, m: TableModel, col: int): TableValueType {.noconv.}
+  TableNumRows* = proc (mh: ptr TableModelHandler, m: TableModel): int {.cdecl.}
+  TableCellValue* = proc (mh: ptr TableModelHandler, m: TableModel, row, col: int): ptr TableValue {.noconv.}
+  TableSetCellValue* = proc (mh: ptr TableModelHandler, m: TableModel, row, col: int, val: ptr TableValue) {.cdecl.}
+
+  TableModelHandler* {.pure.} = object
+    numColumns*: TableNumColumns
+    columnType*: TableColumnType
+    numRows*: TableNumRows
+    cellValue*: TableCellValue
+    setCellValue*: TableSetCellValue
+
+
+proc newTableModel*(mh: ptr TableModelHandler): TableModel {.cdecl, importc: "uiNewTableModel", mylib.}
+proc freeTableModel*(m: TableModel) {.cdecl, importc: "uiFreeTableModel", mylib.}
+proc tableModelRowInserted*(m: TableModel; newIndex: cint) {.cdecl, importc: "uiTableModelRowInserted", mylib.}
+proc tableModelRowChanged*(m: TableModel; index: cint) {.cdecl, importc: "uiTableModelRowChanged", mylib.}
+proc tableModelRowDeleted*(m: TableModel; oldIndex: cint) {.cdecl, importc: "uiTableModelRowDeleted", mylib.}
+
+
+type
+  TableTextColumnOptionalParams* {.bycopy.} = object
+    ColorModelColumn*: int
+
+  TableParams* = object
+    model*: TableModel
+    rowBackgroundColorModelColumn*: cint
+
+
+template toUiTable*(this: untyped): untyped =
+  (cast[ptr Table]((this)))
+
+proc tableAppendTextColumn*(t: ptr Table; name: cstring; textModelColumn: cint;
+                             textEditableModelColumn: cint;
+                             textParams: ptr TableTextColumnOptionalParams) {.cdecl, importc: "uiTableAppendTextColumn", mylib.}
+proc tableAppendImageColumn*(t: ptr Table; name: cstring; imageModelColumn: cint) {.cdecl, importc: "uiTableAppendImageColumn", mylib.}
+proc tableAppendImageTextColumn*(t: ptr Table; name: cstring;
+                                  imageModelColumn: cint; textModelColumn: cint;
+                                  textEditableModelColumn: cint; textParams: ptr TableTextColumnOptionalParams) {.cdecl, importc: "uiTableAppendImageTextColumn", mylib.}
+proc tableAppendCheckboxColumn*(t: ptr Table; name: cstring;
+                                 checkboxModelColumn: cint;
+                                 checkboxEditableModelColumn: cint) {.cdecl, importc: "uiTableAppendCheckboxColumn", mylib.}
+proc tableAppendCheckboxTextColumn*(t: ptr Table; name: cstring; checkboxModelColumn: cint; checkboxEditableModelColumn: cint;
+                                     textModelColumn: cint; textEditableModelColumn: cint; textParams: ptr TableTextColumnOptionalParams) {.cdecl,  importc: "uiTableAppendCheckboxTextColumn", mylib.}
+proc tableAppendProgressBarColumn*(t: ptr Table; name: cstring; progressModelColumn: cint) {.cdecl, importc: "uiTableAppendProgressBarColumn", mylib.}
+proc tableAppendButtonColumn*(t: ptr Table; name: cstring; buttonModelColumn: cint; buttonClickableModelColumn: cint) {.cdecl, importc: "uiTableAppendButtonColumn", mylib.}
+proc newTable*(params: ptr TableParams): ptr Table {.cdecl, importc: "uiNewTable", mylib.}

@@ -489,6 +489,77 @@ proc newMenu*(name: string): Menu =
   result.impl = rawui.newMenu(name)
   result.children = @[]
 
+# -------------------- Image --------------------------------------
+
+type
+  Image* = ref object of Widget
+    impl*: ptr rawui.Image
+
+proc newImage*(width, height: float): Image =
+  newFinal result
+  result.impl = rawui.newImage(width.cdouble, height.cdouble)
+
+# -------------------- Table --------------------------------------
+
+export TableModelHandler, TableModel, TableParams, TableTextColumnOptionalParams, TableColumnType, TableValueType, TableValue
+export newTableModel, freeTableModel
+
+const
+  TableModelColumnNeverEditable* = (-1)
+  TableModelColumnAlwaysEditable* = (-2)
+
+
+type
+  Table* = ref object of Widget
+    impl*: ptr rawui.Table
+
+
+proc tableValueGetType*(v: ptr TableValue): TableValueType {.inline.} = rawui.tableValueGetType(v)
+
+proc newTableValueString*(s: string): ptr TableValue {.inline.} = rawui.newTableValueString(s.cstring)
+proc tableValueString*(v: ptr TableValue): string {.inline.} = $rawui.tableValueString(v)
+
+proc newTableValueImage*(img: Image): ptr TableValue = rawui.newTableValueImage(img.impl)
+proc tableValueImage*(v: ptr TableValue): Image =
+  newFinal result
+  result.impl = rawui.tableValueImage(v)
+
+proc newTableValueInt*(i: int): ptr TableValue {.inline.} = rawui.newTableValueInt(i.cint)
+proc tableValueInt*(v: ptr TableValue): int {.inline.} = rawui.tableValueInt(v)
+
+proc newTableValueColor*(r: float; g: float; b: float; a: float): ptr TableValue {.inline.} = rawui.newTableValueColor(r, g, b, a)
+proc tableValueColor*(v: ptr TableValue; r: ptr float; g: ptr float;
+                      b: ptr float; a: ptr float) {.inline.} = rawui.tableValueColor(v, r, g, b, a)
+
+
+proc rowInserted*(m: TableModel; newIndex: int) {.inline.} = rawui.tableModelRowInserted(m, newIndex.cint)
+proc rowChanged*(m: TableModel; index: int) {.inline.} = rawui.tableModelRowChanged(m, index.cint)
+proc rowDeleted*(m: TableModel; oldIndex: int) {.inline.} = rawui.tableModelRowDeleted(m, oldIndex.cint)
+
+
+proc appendTextColumn*(table: Table, title: string, index, editableMode: int, textParams: ptr TableTextColumnOptionalParams) =
+  table.impl.tableAppendTextColumn(title, index.cint, editableMode.cint, textParams)
+
+proc appendImageColumn*(table: Table, title: string, index: int) =
+  table.impl.tableAppendImageColumn(title, index.cint)
+
+proc appendImageTextColumn*(table: Table, title: string, imageIndex, textIndex, editableMode: int, textParams: ptr TableTextColumnOptionalParams) =
+  table.impl.tableAppendImageTextColumn(title, imageIndex.cint, textIndex.cint, editableMode.cint, textParams)
+
+proc appendCheckboxColumn*(table: Table, title: string, index, editableMode: int) =
+  table.impl.tableAppendCheckboxColumn(title, index.cint, editableMode.cint)
+
+proc appendProgressBarColumn*(table: Table, title: string, index: int) =
+  table.impl.tableAppendProgressBarColumn(title, index.cint)
+
+proc appendButtonColumn*(table: Table, title: string, index, clickableMode: int) =
+  table.impl.tableAppendButtonColumn(title, index.cint, clickableMode.cint)
+
+proc newTable*(params: ptr TableParams): Table =
+  newFinal result
+  result.impl = rawui.newTable(params)
+
+
 # -------------------- Generics ------------------------------------
 
 proc show*[W: Widget](w: W) =
@@ -511,6 +582,8 @@ when false:
     DateTimePicker* = ref object of Widget
       impl*: ptr rawui.DateTimePicker
 
+  proc dateTimePickerTime*(p: DateTimePicker)
+
   proc newDateTimePicker*(): DateTimePicker =
     newFinal result
     result.impl = rawui.newDateTimePicker()
@@ -522,3 +595,7 @@ when false:
   proc newTimePicker*(): DateTimePicker =
     newFinal result
     result.impl = rawui.newTimePicker()
+
+  proc time*(P: DateTimePicker): StructTm = dateTimePickerTime(P.impl, addr result)
+  proc `time=`*(P: DateTimePicker, time: ptr StructTm) = dateTimePickerSetTime(P.impl, time)
+  #proc onchanged*(P: DateTimePicker)
