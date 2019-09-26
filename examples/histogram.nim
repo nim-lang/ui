@@ -27,24 +27,22 @@ const
 
 
 proc renderText(ctx: ptr DrawContext; txt: cstring) =
-  let fontDesc = DrawTextFontDescriptor(
+  let fontDesc = FontDescriptor(
     family: "Courier New",
     size: 12.0,
-    weight: DrawTextWeightNormal,
-    italic: DrawTextItalicNormal,
-    stretch: DrawTextStretchNormal
+    weight: TextWeightNormal,
+    italic: TextItalicNormal,
+    stretch: TextStretchNormal
   )
-  let font = drawLoadClosestFont(unsafeAddr fontDesc)
-  if font == nil:
-    echo "nil!"
-  else:
-    let lay = drawNewTextLayout(txt, font, -1.0)
-    drawTextLayoutSetColor(lay,
-        0, txt.len.cint,
-        0.0, 0.0, 0.0, 1.0)
-    drawText(ctx, 10.0, 400.0, lay)
-    drawFreeTextLayout(lay)
-    drawFreeTextFont font
+  let textLayoutParams = DrawTextLayoutParams(
+    str: newAttributedString(txt),
+    defaultFont: unsafeAddr fontDesc,
+    width: -1.0,
+    align: DrawTextAlignCenter
+  )
+  let textLayout = drawNewTextLayout(unsafeAddr textLayoutParams)
+  ctx.drawText(textLayout, 10.0.cdouble, 400.0.cdouble)
+  drawFreeTextLayout(textLayout)
 
 proc setSolidBrush*(brush: ptr DrawBrush; color: uint32; alpha: cdouble) {.cdecl.} =
   var component: uint8
