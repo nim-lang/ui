@@ -884,15 +884,15 @@ type
 type
     DrawTextLayout* = object
     DrawTextAlign* {.size: sizeof(cint).} = enum
-        DrawTextAlignLeft,
-        DrawTextAlignCenter
-        DrawTextAlignRight
+      DrawTextAlignLeft,
+      DrawTextAlignCenter
+      DrawTextAlignRight
 
     DrawTextLayoutParams* {.bycopy.} = object
-        str*: ptr AttributedString
-        defaultFont*: ptr FontDescriptor
-        width*: cdouble
-        align*: DrawTextAlign
+      str*: ptr AttributedString
+      defaultFont*: ptr FontDescriptor
+      width*: cdouble
+      align*: DrawTextAlign
 
 proc drawNewTextLayout*(params: ptr DrawTextLayoutParams): ptr DrawTextLayout {.
     cdecl, importc: "uiDrawNewTextLayout", mylib.}
