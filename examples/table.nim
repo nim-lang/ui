@@ -31,7 +31,7 @@ proc modelCellValue(mh: ptr TableModelHandler, m: TableModel, row, col: int): pt
     result = newTableValueString($(row+1))
   elif col == COLUMN_PROCESS:
     if progress[row][col] == 0:
-      progress[row][col] = random(100)
+      progress[row][col] = rand(100)
     result = newTableValueInt(progress[row][col])
   #elif col == COLUMN_PASSED:
   #  if progress[row][col] > 60:
