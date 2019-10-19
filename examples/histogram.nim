@@ -269,7 +269,7 @@ proc main*() {.cdecl.} =
   i = 0
   while i < 10:
     datapoints[i] = newSpinbox(0, 100)
-    spinboxSetValue(datapoints[i], random(101).cint)
+    spinboxSetValue(datapoints[i], rand(101).cint)
     spinboxOnChanged(datapoints[i], onDatapointChanged, nil)
     boxAppend(vbox, datapoints[i], 0)
     inc(i)
