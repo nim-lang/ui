@@ -1,6 +1,8 @@
 
 import ui/rawui
 
+export rawui.Align
+
 type
   Widget* = ref object of RootRef ## abstract Widget base class.
 
@@ -43,6 +45,19 @@ template intCallback(name, supertyp, basetyp, on) {.dirty.} =
   proc name(w: ptr rawui.supertyp; data: pointer) {.cdecl.} =
     let widget = cast[basetyp](data)
     if widget.on != nil: widget.on(widget.value)
+
+# ------------------- Grid ------------------------
+type
+  Grid* = ref object of Widget
+    impl*: ptr rawui.Grid
+
+proc add*[SomeWidget: Widget](t: Grid; c: SomeWidget, left: cint, top: cint, xspan: cint, yspan: cint, hexpand: cint, halign: Align, vexpand: cint, valign: Align) =
+  gridAppend t.impl, c.impl, left, top, xspan, yspan, hexpand, halign, vexpand, valign
+
+proc newGrid*(padded = false): Grid =
+  newFinal(result)
+  result.impl = rawui.newGrid()
+  result.impl.gridSetPadded(padded.cint)
 
 # ------------------- Button --------------------------------------
 type
