@@ -1,6 +1,8 @@
 
 import ui/rawui
 
+export rawui.Align
+
 type
   Widget* = ref object of RootRef ## abstract Widget base class.
     internalImpl*: pointer
@@ -51,6 +53,19 @@ template genImplProcs(t: untyped) {.dirty.}=
   type `Raw t` = ptr[rawui.t]
   func impl*(b: t): `Raw t` = cast[`Raw t`](b.internalImpl)
   func `impl=`*(b: t, r: `Raw t`) = b.internalImpl = pointer(r)
+
+# ------------------- Grid ------------------------
+type
+  Grid* = ref object of Widget
+    impl*: ptr rawui.Grid
+
+proc add*[SomeWidget: Widget](t: Grid; c: SomeWidget, left: cint, top: cint, xspan: cint, yspan: cint, hexpand: cint, halign: Align, vexpand: cint, valign: Align) =
+  gridAppend t.impl, c.impl, left, top, xspan, yspan, hexpand, halign, vexpand, valign
+
+proc newGrid*(padded = false): Grid =
+  newFinal(result)
+  result.impl = rawui.newGrid()
+  result.impl.gridSetPadded(padded.cint)
 
 # ------------------- Button --------------------------------------
 type
