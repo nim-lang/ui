@@ -21,7 +21,9 @@ proc main*() =
     else:
       msgBox(mainwin, "File selected (don't worry, it's still there)", filename)
   )
-  menu.addQuitItem(proc(): bool {.closure.} = return true)
+  menu.addQuitItem(proc(): bool {.closure.} =
+    mainwin.destroy()
+    return true)
 
   menu = newMenu("Edit")
   menu.addCheckItem("Checkable Item", proc() = discard)
