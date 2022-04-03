@@ -140,6 +140,9 @@ proc setChild*(w: Window; child: Widget) =
   windowSetChild(w.impl, child.impl)
   w.child = child
 
+proc `child=`*(w: Window; c: Widget) =
+  w.setChild(c)
+
 proc openFile*(parent: Window): string =
   let x = openFile(parent.impl)
   result = $x
@@ -167,7 +170,10 @@ proc add*(b: Box; child: Widget; stretchy=false) =
   boxAppend(b.impl, child.impl, cint(stretchy))
   b.children.add child
 
-proc delete*(b: Box; index: int) = boxDelete(b.impl, index.cint)
+proc delete*(b: Box; index: int) =
+  boxDelete(b.impl, index.cint)
+  b.children.delete(index)
+
 proc padded*(b: Box): bool = boxPadded(b.impl) != 0
 proc `padded=`*(b: Box; x: bool) = boxSetPadded(b.impl, x.cint)
 
