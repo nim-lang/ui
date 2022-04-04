@@ -16,12 +16,19 @@ proc init*() =
     freeInitError(err)
     raise newException(ValueError, msg)
 
+proc uninit*() =
+  rawui.uninit()
+
 proc quit*() = rawui.quit()
 
-proc mainLoop*() =
+proc mainLoop*() {.deprecated: "Use 'main' instead".} =
   rawui.main()
 
-proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) =
+export rawui.main
+export rawui.mainSteps
+export rawui.mainStep
+
+proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) {.deprecated: "Write your own loop please".} =
   ## Can be used to merge an async event loop with UI's event loop.
   ## Implemented using timeouts and polling because that's the only
   ## thing that truely composes.
@@ -30,8 +37,23 @@ proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) =
     poll(timeout)
     if rawui.mainStep(0) == 0: break
 
-proc uninit*() =
-  rawui.uninit()
+template wrapClosure(f, outtype): untyped =
+  block:
+    proc wrapped(_: pointer): outtype {.cdecl.} =
+      f().outtype
+    wrapped
+
+proc queueMain*(f: proc) =
+  rawui.onShouldQuit(wrapClosure(f, void), nil)
+  
+
+# Not included due to bad implementation
+# proc timer*(milliseconds: cint) =
+#   rawui.timer(milliseconds)
+
+proc onShouldQuit*(f: proc: bool) =
+  rawui.onShouldQuit(wrapClosure(f, cint), nil)
+
 
 template newFinal(result) =
   #proc finalize(x: type(result)) {.nimcall.} =
@@ -480,11 +502,11 @@ template addMenuItemImpl(ex) =
   menuItemOnClicked(result.impl, wrapmeOnclicked, cast[pointer](result))
   m.children.add result
 
-proc addItem*(m: Menu; name: string, onclicked: proc()): MenuItem {.discardable.} =
+proc addItem*(m: Menu; name: string, onclicked: proc() = nil): MenuItem {.discardable.} =
   addMenuItemImpl(menuAppendItem(m.impl, name))
   result.onclicked = onclicked
 
-proc addCheckItem*(m: Menu; name: string, onclicked: proc()): MenuItem {.discardable.} =
+proc addCheckItem*(m: Menu; name: string, onclicked: proc() = nil): MenuItem {.discardable.} =
   addMenuItemImpl(menuAppendCheckItem(m.impl, name))
   result.onclicked = onclicked
 
@@ -498,10 +520,11 @@ proc wrapOnShouldQuit(data: pointer): cint {.cdecl.} =
   if result == 1:
     GC_unref c
 
-proc addQuitItem*(m: Menu, shouldQuit: proc(): bool): MenuItem {.discardable.} =
-  newFinal result
-  result.impl = menuAppendQuitItem(m.impl)
-  m.children.add result
+proc addQuitItem*(m: Menu): MenuItem {.discardable.} =
+  addMenuItemImpl(menuAppendQuitItem(m.impl))
+
+proc addQuitItem*(m: Menu, shouldQuit: proc(): bool): MenuItem {.discardable, deprecated:"Register menu action yourself".} =
+  result = addQuitItem(m)
   var cl = ShouldQuitClosure(fn: shouldQuit)
   GC_ref cl
   onShouldQuit(wrapOnShouldQuit, cast[pointer](cl))
@@ -593,6 +616,75 @@ proc newTable*(params: ptr TableParams): Table =
   newFinal result
   result.impl = rawui.newTable(params)
 
+# -------------------- Area ----------------------------------------
+
+type
+  AreaObj = object of Widget
+    handler: AreaHandler
+    onDraw*: proc (drawParams: ptr AreaDrawParams)
+    onMouseEvent*: proc (event: ptr AreaMouseEvent)
+    onMouseCrossed*: proc (left: cint)
+    onDragBroken*: proc ()
+    onKeyEvent*: proc (event: ptr AreaKeyEvent): cint
+  Area* = ref AreaObj
+
+genImplProcs(Area)
+
+# template void2Callback(name, param0typ, supertyp, basetyp; on: untyped; param2typ:typedesc=void) =
+#   proc name(handler: ptr param0typ, w: ptr rawui.supertyp; data: param2typ) {.cdecl.} =
+#     let widget = cast[basetyp](w)
+#     if widget.on != nil: widget.on(param2typ)
+
+# let wrapOnDraw = void2Callback(AreaHandler, Area, Area, onDraw, ptr rawui.AreaDrawParams)
+# void2Callback(wrapOnMouseEvent, AreaHandler, Area, Area, onMouseEvent, ptr rawui.AreaMouseEvent)
+# void2Callback(wrapOnMouseCrossed, AreaHandler, Area, Area, onMouseCrossed, cint)
+# void2Callback(wrapOnDragBroken, AreaHandler, Area, Area, onDragBroken)
+# void2Callback(wrapOnKeyEvent, AreaHandler, Area, Area, onKeyEvent, ptr rawui.AreaKeyEvent)
+
+template wrapAreaCallback(on; param2typ:typedesc=void, rettyp: typedesc = void): untyped =
+  when param2typ is void:
+    block:
+      proc generated_handler(phandler: ptr AreaHandler, _: ptr rawui.Area): rettyp {.cdecl.} =
+        let widget = cast[ptr Area](cast[int](phandler) - offsetOf(AreaObj, handler))
+        if widget.on != nil: widget.on()
+        else: default(rettyp)
+      generated_handler
+  else:
+    block:
+      proc generated_handler(phandler: ptr AreaHandler, _: ptr rawui.Area, params: param2typ): rettyp {.cdecl.} =
+        let widget = cast[ptr Area](cast[int](phandler) - offsetOf(AreaObj, handler))
+        if widget.on != nil: widget.on(params)
+        else: default(rettyp)
+      generated_handler
+
+proc initHandler(a: Area) =
+  var handler: AreaHandler
+  handler.draw = wrapAreaCallback(onDraw, ptr AreaDrawParams)
+  handler.mouseEvent = wrapAreaCallback(onMouseEvent, ptr AreaMouseEvent)
+  handler.mouseCrossed = wrapAreaCallback(onMouseCrossed, cint)
+  handler.dragBroken = wrapAreaCallback(onDragBroken)
+  handler.keyEvent = wrapAreaCallback(onKeyEvent, ptr AreaKeyEvent, cint)
+
+  a.handler = handler
+
+proc newArea*(): Area =
+  newFinal result
+  result.initHandler()
+  result.impl = rawui.newArea(result.handler.addr)
+
+proc newScrollingArea*(width: cint, height: cint): Area =
+  newFinal result
+  result.initHandler()
+  result.impl = rawui.newScrollingArea(result.handler.addr, width, height)
+
+proc `size=`*(a: Area, width: cint, height: cint) =
+  a.impl.areaSetSize(width, height)
+
+proc queueRedrawAll*(a: Area) =
+  rawui.areaQueueRedrawAll(a.impl)
+
+proc scrollTo*(a: Area; x: cdouble; y: cdouble; width: cdouble; height: cdouble) =
+  rawui.areaScrollTo(a.impl, x, y, width, height)
 
 # -------------------- Generics ------------------------------------
 

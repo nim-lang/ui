@@ -90,7 +90,7 @@ type
     ForEachStop,
 
   InitOptions* = object
-    size*: csize
+    size*: csize_t
 
 {.deadCodeElim: on.}
 
@@ -153,7 +153,7 @@ proc controlEnable*(a2: ptr Control) {.cdecl, importc: "uiControlEnable",
                                    mylib.}
 proc controlDisable*(a2: ptr Control) {.cdecl, importc: "uiControlDisable",
                                     mylib.}
-proc allocControl*(n: csize; oSsig: uint32; typesig: uint32; typenamestr: cstring): ptr Control {.
+proc allocControl*(n: csize_t; oSsig: uint32; typesig: uint32; typenamestr: cstring): ptr Control {.
     cdecl, importc: "uiAllocControl", mylib.}
 proc freeControl*(a2: ptr Control) {.cdecl, importc: "uiFreeControl", mylib.}
 
@@ -652,7 +652,7 @@ type
     y1*: cdouble
     outerRadius*: cdouble
     stops*: ptr DrawBrushGradientStop
-    numStops*: csize
+    numStops*: csize_t
 
   DrawBrushGradientStop* = object
     pos*: cdouble
@@ -667,7 +667,7 @@ type
     thickness*: cdouble
     miterLimit*: cdouble
     dashes*: ptr cdouble
-    numDashes*: csize
+    numDashes*: csize_t
     dashPhase*: cdouble
 
 
@@ -855,23 +855,23 @@ proc attributeFeatures*(a: ptr Attribute): ptr OpenTypeFeatures {.cdecl, importc
 
 type
     AttributedStringForEachAttributeFunc* = proc (s: ptr AttributedString;
-        a: ptr Attribute; start: csize; `end`: csize; data: pointer): ForEach
+        a: ptr Attribute; start: csize_t; `end`: csize_t; data: pointer): ForEach
 
 proc newAttributedString*(initialString: cstring): ptr AttributedString {.cdecl, importc: "uiNewAttributedString", mylib.}
 proc freeAttributedString*(s: ptr AttributedString) {.cdecl, importc: "uiFreeAttributedString", mylib.}
 proc attributedStringString*(s: ptr AttributedString): cstring {.cdecl, importc: "uiAttributedStringString", mylib.}
-proc attributedStringLen*(s: ptr AttributedString): csize {.cdecl, importc: "uiAttributedStringLen", mylib.}
+proc attributedStringLen*(s: ptr AttributedString): csize_t {.cdecl, importc: "uiAttributedStringLen", mylib.}
 proc attributedStringAppendUnattributed*(s: ptr AttributedString; str: cstring) {.cdecl, importc: "uiAttributedStringAppendUnattributed", mylib.}
 proc attributedStringInsertAtUnattributed*(s: ptr AttributedString;
-    str: cstring; at: csize) {.cdecl, importc: "uiAttributedStringInsertAtUnattributed", mylib.}
-proc attributedStringDelete*(s: ptr AttributedString; start: csize; `end`: csize) {.cdecl, importc: "uiAttributedStringDelete", mylib.}
+    str: cstring; at: csize_t) {.cdecl, importc: "uiAttributedStringInsertAtUnattributed", mylib.}
+proc attributedStringDelete*(s: ptr AttributedString; start: csize_t; `end`: csize_t) {.cdecl, importc: "uiAttributedStringDelete", mylib.}
 proc attributedStringSetAttribute*(s: ptr AttributedString; a: ptr Attribute;
-                                    start: csize; `end`: csize) {.cdecl, importc: "uiAttributedStringSetAttribute", mylib.}
+                                    start: csize_t; `end`: csize_t) {.cdecl, importc: "uiAttributedStringSetAttribute", mylib.}
 proc attributedStringForEachAttribute*(s: ptr AttributedString; f: AttributedStringForEachAttributeFunc;
                                         data: pointer) {.cdecl, importc: "uiDruiAttributedStringForEachAttributeawSave", mylib.}
-proc attributedStringNumGraphemes*(s: ptr AttributedString): csize {.cdecl, importc: "uiAttributedStringNumGraphemes", mylib.}
-proc attributedStringByteIndexToGrapheme*(s: ptr AttributedString; pos: csize): csize {.cdecl, importc: "uiAttributedStringByteIndexToGrapheme", mylib.}
-proc attributedStringGraphemeToByteIndex*(s: ptr AttributedString; pos: csize): csize {.cdecl, importc: "uiAttributedStringGraphemeToByteIndex", mylib.}
+proc attributedStringNumGraphemes*(s: ptr AttributedString): csize_t {.cdecl, importc: "uiAttributedStringNumGraphemes", mylib.}
+proc attributedStringByteIndexToGrapheme*(s: ptr AttributedString; pos: csize_t): csize_t {.cdecl, importc: "uiAttributedStringByteIndexToGrapheme", mylib.}
+proc attributedStringGraphemeToByteIndex*(s: ptr AttributedString; pos: csize_t): csize_t {.cdecl, importc: "uiAttributedStringGraphemeToByteIndex", mylib.}
 
 type
   FontDescriptor* = object
