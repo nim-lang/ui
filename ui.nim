@@ -30,6 +30,9 @@ proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) =
     poll(timeout)
     if rawui.mainStep(0) == 0: break
 
+proc uninit*() =
+  rawui.uninit()
+
 template newFinal(result) =
   #proc finalize(x: type(result)) {.nimcall.} =
   #  controlDestroy(x.impl)
