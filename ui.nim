@@ -20,7 +20,6 @@ proc quit*() = rawui.quit()
 
 proc mainLoop*() =
   rawui.main()
-  rawui.uninit()
 
 proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) =
   ## Can be used to merge an async event loop with UI's event loop.
@@ -29,8 +28,7 @@ proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) =
   rawui.mainSteps()
   while true:
     poll(timeout)
-    discard rawui.mainStep(0)# != 0: break
-  rawui.uninit()
+    if rawui.mainStep(0) == 0: break
 
 template newFinal(result) =
   #proc finalize(x: type(result)) {.nimcall.} =
