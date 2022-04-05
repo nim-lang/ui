@@ -37,22 +37,22 @@ proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) {.deprecated: "Wri
     poll(timeout)
     if rawui.mainStep(0) == 0: break
 
-template wrapClosure(f, outtype): untyped =
-  block:
-    proc wrapped(_: pointer): outtype {.cdecl.} =
-      f().outtype
-    wrapped
+proc queueMain*(f: proc (): void {.cdecl.}) =
+  rawui.queueMain(cast[proc (_:pointer): void {.cdecl.}](f), nil) # Not sure if this cast works or not
 
-proc queueMain*(f: proc) =
-  rawui.onShouldQuit(wrapClosure(f, void), nil)
-  
+proc queueMain*[T](f: proc (_:T): void {.cdecl.}, p: T) =
+  rawui.queueMain(cast[proc (_:pointer): void {.cdecl.}](f), cast[pointer](p))
+
 
 # Not included due to bad implementation
 # proc timer*(milliseconds: cint) =
 #   rawui.timer(milliseconds)
 
-proc onShouldQuit*(f: proc: bool) =
-  rawui.onShouldQuit(wrapClosure(f, cint), nil)
+proc onShouldQuit*(f: proc (): bool {.cdecl.}) =
+  rawui.onShouldQuit(cast[proc (_:pointer): cint {.cdecl.}](f), nil) # Not sure if this cast works or not
+
+proc onShouldQuit*[T](f: proc (_:T): bool {.cdecl.}, p: T) =
+  rawui.onShouldQuit(cast[proc (_:pointer): cint {.cdecl.}](f), cast[pointer](p))
 
 
 template newFinal(result) =
