@@ -21,7 +21,7 @@ proc uninit*() =
 
 proc quit*() = rawui.quit()
 
-proc mainLoop*() {.deprecated: "Use 'main' instead".} =
+proc mainLoop*() =
   rawui.main()
 
 export rawui.main
