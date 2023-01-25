@@ -496,10 +496,11 @@ type
     
 genImplProcs(Menu)
 
-template addMenuItemImpl(ex) =
+template addMenuItemImpl(ex; skip_click=false) =
   newFinal result
   result.impl = ex
-  menuItemOnClicked(result.impl, wrapmeOnclicked, cast[pointer](result))
+  when not skip_click:
+    menuItemOnClicked(result.impl, wrapmeOnclicked, cast[pointer](result))
   m.children.add result
 
 proc addItem*(m: Menu; name: string, onclicked: proc() = nil): MenuItem {.discardable.} =
@@ -521,7 +522,7 @@ proc wrapOnShouldQuit(data: pointer): cint {.cdecl.} =
     GC_unref c
 
 proc addQuitItem*(m: Menu): MenuItem {.discardable.} =
-  addMenuItemImpl(menuAppendQuitItem(m.impl))
+  addMenuItemImpl(menuAppendQuitItem(m.impl), skip_click=true)
 
 proc addQuitItem*(m: Menu, shouldQuit: proc(): bool): MenuItem {.discardable, deprecated:"Register menu action yourself".} =
   result = addQuitItem(m)
