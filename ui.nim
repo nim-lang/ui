@@ -1,6 +1,8 @@
 
 import ui/rawui
 
+export rawui.Align
+
 type
   Widget* = ref object of RootRef ## abstract Widget base class.
     internalImpl*: pointer
@@ -16,21 +18,44 @@ proc init*() =
     freeInitError(err)
     raise newException(ValueError, msg)
 
+proc uninit*() =
+  rawui.uninit()
+
 proc quit*() = rawui.quit()
 
 proc mainLoop*() =
   rawui.main()
-  rawui.uninit()
 
-proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) =
+export rawui.main
+export rawui.mainSteps
+export rawui.mainStep
+
+proc pollingMainLoop*(poll: proc(timeout: int); timeout: int) {.deprecated: "Write your own loop please".} =
   ## Can be used to merge an async event loop with UI's event loop.
   ## Implemented using timeouts and polling because that's the only
   ## thing that truely composes.
   rawui.mainSteps()
   while true:
     poll(timeout)
-    discard rawui.mainStep(0)# != 0: break
-  rawui.uninit()
+    if rawui.mainStep(0) == 0: break
+
+proc queueMain*(f: proc (): void {.cdecl.}) =
+  rawui.queueMain(cast[proc (_:pointer): void {.cdecl.}](f), nil) # Not sure if this cast works or not
+
+proc queueMain*[T](f: proc (_:T): void {.cdecl.}, p: T) =
+  rawui.queueMain(cast[proc (_:pointer): void {.cdecl.}](f), cast[pointer](p))
+
+
+# Not included due to bad implementation
+# proc timer*(milliseconds: cint) =
+#   rawui.timer(milliseconds)
+
+proc onShouldQuit*(f: proc (): bool {.cdecl.}) =
+  rawui.onShouldQuit(cast[proc (_:pointer): cint {.cdecl.}](f), nil) # Not sure if this cast works or not
+
+proc onShouldQuit*[T](f: proc (_:T): bool {.cdecl.}, p: T) =
+  rawui.onShouldQuit(cast[proc (_:pointer): cint {.cdecl.}](f), cast[pointer](p))
+
 
 template newFinal(result) =
   #proc finalize(x: type(result)) {.nimcall.} =
@@ -52,7 +77,21 @@ template genImplProcs(t: untyped) {.dirty.}=
   func impl*(b: t): `Raw t` = cast[`Raw t`](b.internalImpl)
   func `impl=`*(b: t, r: `Raw t`) = b.internalImpl = pointer(r)
 
+# ------------------- Grid ------------------------
+type
+  Grid* = ref object of Widget
+    impl*: ptr rawui.Grid
+
+proc add*[SomeWidget: Widget](t: Grid; c: SomeWidget, left: cint, top: cint, xspan: cint, yspan: cint, hexpand: cint, halign: Align, vexpand: cint, valign: Align) =
+  gridAppend t.impl, c.impl, left, top, xspan, yspan, hexpand, halign, vexpand, valign
+
+proc newGrid*(padded = false): Grid =
+  newFinal(result)
+  result.impl = rawui.newGrid()
+  result.impl.gridSetPadded(padded.cint)
+
 # ------------------- Button --------------------------------------
+
 type
   Button* = ref object of Widget
     onclick*: proc () {.closure.}
@@ -79,23 +118,21 @@ proc newButton*(text: string; onclick: proc() = nil): Button =
 
 type
   RadioButtons* = ref object of Widget
-    onRadioButtonClick*: proc() {.closure.}
-
-voidCallback(wrapOnRadioButtonClick, RadioButtons, RadioButtons, onRadioButtonClick)
-
-genImplProcs(RadioButtons)
+    impl*: ptr rawui.RadioButtons
+    onselected*: proc ()
 
 proc add*(r: RadioButtons; text: string) =
   radioButtonsAppend(r.impl, text)
+proc selected*(r: RadioButtons): int = radioButtonsSelected(r.impl)
+proc `selected=`*(r: RadioButtons; n: int) = radioButtonsSetSelected r.impl, cint n
 
-proc radioButtonsSelected*(r: RadioButtons): int =
-  radioButtonsSelected(r.impl)
+voidCallback wraprbOnSelected, RadioButtons, RadioButtons, onselected
 
-proc newRadioButtons*(onclick: proc() = nil): RadioButtons =
-  newFinal(result)
+proc newRadioButtons*(onSelected: proc() = nil): RadioButtons =
+  newFinal result
   result.impl = rawui.newRadioButtons()
-  result.impl.radioButtonsOnSelected(wrapOnRadioButtonClick, cast[pointer](result))
-  result.onRadioButtonClick = onclick
+  result.onSelected = onSelected
+  radioButtonsOnSelected(result.impl, wraprbOnSelected, cast[pointer](result))
 
 # ----------------- Window -------------------------------------------
 
@@ -140,6 +177,9 @@ proc setChild*(w: Window; child: Widget) =
   windowSetChild(w.impl, child.impl)
   w.child = child
 
+proc `child=`*(w: Window; c: Widget) =
+  w.setChild(c)
+
 proc openFile*(parent: Window): string =
   let x = openFile(parent.impl)
   result = $x
@@ -167,7 +207,10 @@ proc add*(b: Box; child: Widget; stretchy=false) =
   boxAppend(b.impl, child.impl, cint(stretchy))
   b.children.add child
 
-proc delete*(b: Box; index: int) = boxDelete(b.impl, index.cint)
+proc delete*(b: Box; index: int) =
+  boxDelete(b.impl, index.cint)
+  b.children.delete(index)
+
 proc padded*(b: Box): bool = boxPadded(b.impl) != 0
 proc `padded=`*(b: Box; x: bool) = boxSetPadded(b.impl, x.cint)
 
@@ -249,17 +292,29 @@ proc newLabel*(text: string): Label =
 
 type
   Tab* = ref object of Widget
+    impl*: ptr rawui.Tab
+    marginedDefault*: bool
     children*: seq[Widget]
     
 genImplProcs(Tab)
 
-proc add*(t: Tab; name: string; c: Widget) =
-  tabAppend t.impl, name, c.impl
-  t.children.add c
+proc add*[SomeWidget: Widget](t: Tab; name: string; child: SomeWidget) =
+  tabAppend t.impl, name, child.impl
+  tabSetMargined(t.impl, tabNumPages(t.impl)-1, cint(t.marginedDefault))
+  t.children.add child
 
-proc insertAt*(t: Tab; name: string; at: int; c: Widget) =
-  tabInsertAt(t.impl, name, at.cint, c.impl)
-  t.children.insert(c, at)
+proc add*[SomeWidget: Widget](t: Tab; name: string; child: SomeWidget; margined: bool) =
+  add(t,name,child)
+  tabSetMargined(t.impl, tabNumPages(t.impl)-1, cint(margined))
+
+proc insertAt*[SomeWidget: Widget](t: Tab; name: string; at: int; child: SomeWidget) =
+  tabInsertAt(t.impl, name, at.uint64, child.impl)
+  tabSetMargined(t.impl, at.uint64, cint(t.marginedDefault))
+  t.children.insert(child, at)
+
+proc insertAt*[SomeWidget: Widget](t: Tab; name: string; at: int; child: SomeWidget; margined: bool) =
+  insertAt(t,name,at,child)
+  tabSetMargined(t.impl, at.uint64, cint(margined))
 
 proc delete*(t: Tab; index: int) =
   tabDelete(t.impl, index.cint)
@@ -270,9 +325,10 @@ proc margined*(t: Tab; page: int): bool =
   tabMargined(t.impl, page.cint) != 0
 proc `margined=`*(t: Tab; page: int; x: bool) =
   tabSetMargined(t.impl, page.cint, cint(x))
-proc newTab*(): Tab =
+proc newTab*(margined = false): Tab =
   newFinal result
   result.impl = rawui.newTab()
+  result.marginedDefault = margined
   result.children = @[]
 
 # ------------- Group --------------------------------------------------
@@ -286,9 +342,9 @@ genImplProcs(Group)
 proc title*(g: Group): string = $groupTitle(g.impl)
 proc `title=`*(g: Group; title: string) =
   groupSetTitle(g.impl, title)
-proc `child=`*(g: Group; c: Widget) =
-  groupSetChild(g.impl, c.impl)
-  g.child = c
+proc `child=`*[SomeWidget: Widget](g: Group; child: SomeWidget) =
+  groupSetChild(g.impl, child.impl)
+  g.child = child
 proc margined*(g: Group): bool = groupMargined(g.impl) != 0
 proc `margined=`*(g: Group; x: bool) =
   groupSetMargined(g.impl, x.cint)
@@ -345,6 +401,8 @@ genImplProcs(ProgressBar)
 
 proc `value=`*(p: ProgressBar; n: int) =
   progressBarSetValue p.impl, n.cint
+
+proc value*(p: Progressbar; n:int): int = progressBarValue(p.impl)
 
 proc newProgressBar*(): ProgressBar =
   newFinal result
@@ -467,17 +525,18 @@ type
     
 genImplProcs(Menu)
 
-template addMenuItemImpl(ex) =
+template addMenuItemImpl(ex; skip_click=false) =
   newFinal result
   result.impl = ex
-  menuItemOnClicked(result.impl, wrapmeOnclicked, cast[pointer](result))
+  when not skip_click:
+    menuItemOnClicked(result.impl, wrapmeOnclicked, cast[pointer](result))
   m.children.add result
 
-proc addItem*(m: Menu; name: string, onclicked: proc()): MenuItem {.discardable.} =
+proc addItem*(m: Menu; name: string, onclicked: proc() = nil): MenuItem {.discardable.} =
   addMenuItemImpl(menuAppendItem(m.impl, name))
   result.onclicked = onclicked
 
-proc addCheckItem*(m: Menu; name: string, onclicked: proc()): MenuItem {.discardable.} =
+proc addCheckItem*(m: Menu; name: string, onclicked: proc() = nil): MenuItem {.discardable.} =
   addMenuItemImpl(menuAppendCheckItem(m.impl, name))
   result.onclicked = onclicked
 
@@ -491,10 +550,11 @@ proc wrapOnShouldQuit(data: pointer): cint {.cdecl.} =
   if result == 1:
     GC_unref c
 
-proc addQuitItem*(m: Menu, shouldQuit: proc(): bool): MenuItem {.discardable.} =
-  newFinal result
-  result.impl = menuAppendQuitItem(m.impl)
-  m.children.add result
+proc addQuitItem*(m: Menu): MenuItem {.discardable.} =
+  addMenuItemImpl(menuAppendQuitItem(m.impl), skip_click=true)
+
+proc addQuitItem*(m: Menu, shouldQuit: proc(): bool): MenuItem {.discardable, deprecated:"Register menu action yourself".} =
+  result = addQuitItem(m)
   var cl = ShouldQuitClosure(fn: shouldQuit)
   GC_ref cl
   onShouldQuit(wrapOnShouldQuit, cast[pointer](cl))
@@ -586,6 +646,75 @@ proc newTable*(params: ptr TableParams): Table =
   newFinal result
   result.impl = rawui.newTable(params)
 
+# -------------------- Area ----------------------------------------
+
+type
+  AreaObj = object of Widget
+    handler: AreaHandler
+    onDraw*: proc (drawParams: ptr AreaDrawParams)
+    onMouseEvent*: proc (event: ptr AreaMouseEvent)
+    onMouseCrossed*: proc (left: cint)
+    onDragBroken*: proc ()
+    onKeyEvent*: proc (event: ptr AreaKeyEvent): cint
+  Area* = ref AreaObj
+
+genImplProcs(Area)
+
+# template void2Callback(name, param0typ, supertyp, basetyp; on: untyped; param2typ:typedesc=void) =
+#   proc name(handler: ptr param0typ, w: ptr rawui.supertyp; data: param2typ) {.cdecl.} =
+#     let widget = cast[basetyp](w)
+#     if widget.on != nil: widget.on(param2typ)
+
+# let wrapOnDraw = void2Callback(AreaHandler, Area, Area, onDraw, ptr rawui.AreaDrawParams)
+# void2Callback(wrapOnMouseEvent, AreaHandler, Area, Area, onMouseEvent, ptr rawui.AreaMouseEvent)
+# void2Callback(wrapOnMouseCrossed, AreaHandler, Area, Area, onMouseCrossed, cint)
+# void2Callback(wrapOnDragBroken, AreaHandler, Area, Area, onDragBroken)
+# void2Callback(wrapOnKeyEvent, AreaHandler, Area, Area, onKeyEvent, ptr rawui.AreaKeyEvent)
+
+template wrapAreaCallback(on; param2typ:typedesc=void, rettyp: typedesc = void): untyped =
+  when param2typ is void:
+    block:
+      proc generated_handler(phandler: ptr AreaHandler, _: ptr rawui.Area): rettyp {.cdecl.} =
+        let widget = cast[ptr Area](cast[int](phandler) - offsetOf(AreaObj, handler))
+        if widget.on != nil: widget.on()
+        else: default(rettyp)
+      generated_handler
+  else:
+    block:
+      proc generated_handler(phandler: ptr AreaHandler, _: ptr rawui.Area, params: param2typ): rettyp {.cdecl.} =
+        let widget = cast[ptr Area](cast[int](phandler) - offsetOf(AreaObj, handler))
+        if widget.on != nil: widget.on(params)
+        else: default(rettyp)
+      generated_handler
+
+proc initHandler(a: Area) =
+  var handler: AreaHandler
+  handler.draw = wrapAreaCallback(onDraw, ptr AreaDrawParams)
+  handler.mouseEvent = wrapAreaCallback(onMouseEvent, ptr AreaMouseEvent)
+  handler.mouseCrossed = wrapAreaCallback(onMouseCrossed, cint)
+  handler.dragBroken = wrapAreaCallback(onDragBroken)
+  handler.keyEvent = wrapAreaCallback(onKeyEvent, ptr AreaKeyEvent, cint)
+
+  a.handler = handler
+
+proc newArea*(): Area =
+  newFinal result
+  result.initHandler()
+  result.impl = rawui.newArea(result.handler.addr)
+
+proc newScrollingArea*(width: cint, height: cint): Area =
+  newFinal result
+  result.initHandler()
+  result.impl = rawui.newScrollingArea(result.handler.addr, width, height)
+
+proc `size=`*(a: Area, width: cint, height: cint) =
+  a.impl.areaSetSize(width, height)
+
+proc queueRedrawAll*(a: Area) =
+  rawui.areaQueueRedrawAll(a.impl)
+
+proc scrollTo*(a: Area; x: cdouble; y: cdouble; width: cdouble; height: cdouble) =
+  rawui.areaScrollTo(a.impl, x, y, width, height)
 
 # -------------------- Generics ------------------------------------
 
