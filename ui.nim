@@ -91,6 +91,7 @@ proc newGrid*(padded = false): Grid =
   result.impl.gridSetPadded(padded.cint)
 
 # ------------------- Button --------------------------------------
+
 type
   Button* = ref object of Widget
     onclick*: proc () {.closure.}
@@ -117,23 +118,21 @@ proc newButton*(text: string; onclick: proc() = nil): Button =
 
 type
   RadioButtons* = ref object of Widget
-    onRadioButtonClick*: proc() {.closure.}
-
-voidCallback(wrapOnRadioButtonClick, RadioButtons, RadioButtons, onRadioButtonClick)
-
-genImplProcs(RadioButtons)
+    impl*: ptr rawui.RadioButtons
+    onselected*: proc ()
 
 proc add*(r: RadioButtons; text: string) =
   radioButtonsAppend(r.impl, text)
+proc selected*(r: RadioButtons): int = radioButtonsSelected(r.impl)
+proc `selected=`*(r: RadioButtons; n: int) = radioButtonsSetSelected r.impl, cint n
 
-proc radioButtonsSelected*(r: RadioButtons): int =
-  radioButtonsSelected(r.impl)
+voidCallback wraprbOnSelected, RadioButtons, RadioButtons, onselected
 
-proc newRadioButtons*(onclick: proc() = nil): RadioButtons =
-  newFinal(result)
+proc newRadioButtons*(onSelected: proc() = nil): RadioButtons =
+  newFinal result
   result.impl = rawui.newRadioButtons()
-  result.impl.radioButtonsOnSelected(wrapOnRadioButtonClick, cast[pointer](result))
-  result.onRadioButtonClick = onclick
+  result.onSelected = onSelected
+  radioButtonsOnSelected(result.impl, wraprbOnSelected, cast[pointer](result))
 
 # ----------------- Window -------------------------------------------
 
@@ -293,17 +292,29 @@ proc newLabel*(text: string): Label =
 
 type
   Tab* = ref object of Widget
+    impl*: ptr rawui.Tab
+    marginedDefault*: bool
     children*: seq[Widget]
     
 genImplProcs(Tab)
 
-proc add*(t: Tab; name: string; c: Widget) =
-  tabAppend t.impl, name, c.impl
-  t.children.add c
+proc add*[SomeWidget: Widget](t: Tab; name: string; child: SomeWidget) =
+  tabAppend t.impl, name, child.impl
+  tabSetMargined(t.impl, tabNumPages(t.impl)-1, cint(t.marginedDefault))
+  t.children.add child
 
-proc insertAt*(t: Tab; name: string; at: int; c: Widget) =
-  tabInsertAt(t.impl, name, at.cint, c.impl)
-  t.children.insert(c, at)
+proc add*[SomeWidget: Widget](t: Tab; name: string; child: SomeWidget; margined: bool) =
+  add(t,name,child)
+  tabSetMargined(t.impl, tabNumPages(t.impl)-1, cint(margined))
+
+proc insertAt*[SomeWidget: Widget](t: Tab; name: string; at: int; child: SomeWidget) =
+  tabInsertAt(t.impl, name, at.uint64, child.impl)
+  tabSetMargined(t.impl, at.uint64, cint(t.marginedDefault))
+  t.children.insert(child, at)
+
+proc insertAt*[SomeWidget: Widget](t: Tab; name: string; at: int; child: SomeWidget; margined: bool) =
+  insertAt(t,name,at,child)
+  tabSetMargined(t.impl, at.uint64, cint(margined))
 
 proc delete*(t: Tab; index: int) =
   tabDelete(t.impl, index.cint)
@@ -314,9 +325,10 @@ proc margined*(t: Tab; page: int): bool =
   tabMargined(t.impl, page.cint) != 0
 proc `margined=`*(t: Tab; page: int; x: bool) =
   tabSetMargined(t.impl, page.cint, cint(x))
-proc newTab*(): Tab =
+proc newTab*(margined = false): Tab =
   newFinal result
   result.impl = rawui.newTab()
+  result.marginedDefault = margined
   result.children = @[]
 
 # ------------- Group --------------------------------------------------
@@ -330,9 +342,9 @@ genImplProcs(Group)
 proc title*(g: Group): string = $groupTitle(g.impl)
 proc `title=`*(g: Group; title: string) =
   groupSetTitle(g.impl, title)
-proc `child=`*(g: Group; c: Widget) =
-  groupSetChild(g.impl, c.impl)
-  g.child = c
+proc `child=`*[SomeWidget: Widget](g: Group; child: SomeWidget) =
+  groupSetChild(g.impl, child.impl)
+  g.child = child
 proc margined*(g: Group): bool = groupMargined(g.impl) != 0
 proc `margined=`*(g: Group; x: bool) =
   groupSetMargined(g.impl, x.cint)
@@ -389,6 +401,8 @@ genImplProcs(ProgressBar)
 
 proc `value=`*(p: ProgressBar; n: int) =
   progressBarSetValue p.impl, n.cint
+
+proc value*(p: Progressbar; n:int): int = progressBarValue(p.impl)
 
 proc newProgressBar*(): ProgressBar =
   newFinal result
