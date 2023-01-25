@@ -1,11 +1,11 @@
-import macros, typetraits, tables, unicode, "../ui"
+import macros, "../ui"
 
 proc `[]`(s: NimNode, x: Slice[int]): seq[NimNode] =
   ## slice operation for NimNodes.
   var a = x.a
   var L = x.b - a + 1
   newSeq(result, L)
-  for i in 0.. <L: result[i] = s[i + a]
+  for i in 0..<L: result[i] = s[i + a]
 
 proc high(s: NimNode):int =
   s.len-1
@@ -36,13 +36,13 @@ macro genui*(args: varargs[untyped]): untyped =
     if hasAddArguments:
       result = parseBracketExpr(call[0])
     else:
-      result.name = $call[0].ident
-    if result.arguments == nil:
+      result.name = call[0].strVal
+    if result.arguments.len == 0:
       result.arguments = if hasChildren: call[1..<call.high] else: call[1..call.high]
     #else:
     #  for arg in if hasChildren: call[1..<call.high] else: call[1..call.high]:
     #    result.arguments.add arg
-    result.children = if hasChildren: parseChildren(call[call.high]) else: nil
+    result.children = if hasChildren: parseChildren(call[call.high]) else: @[]
 
   proc parseBracketExpr(bracketExpr:NimNode):WidgetArguments =
     let hasArguments = bracketExpr[0].kind == nnkCall
@@ -50,9 +50,9 @@ macro genui*(args: varargs[untyped]): untyped =
     if hasArguments:
       result = parseCall(bracketExpr[0])
     else:
-      result.name = $bracketExpr[0].ident
+      result.name = bracketExpr[0].strVal
     result.addArguments = if hasChildren: bracketExpr[1..<bracketExpr.high] else: bracketExpr[1..bracketExpr.high]
-    result.children = if hasChildren: parseChildren(bracketExpr[bracketExpr.high]) else: nil
+    result.children = if hasChildren: parseChildren(bracketExpr[bracketExpr.high]) else: @[]
 
   proc parseInfix(infix:NimNode):WidgetArguments=
     result = parseNode(infix[2])
@@ -63,14 +63,14 @@ macro genui*(args: varargs[untyped]): untyped =
   proc parseIdent(ident:NimNode):WidgetArguments=
     result = WidgetArguments(
       identifier: nil,
-      name: $ident.ident,
-      addArguments: nil,
-      arguments: nil,
-      children: nil,
+      name: ident.strVal,
+      addArguments: @[],
+      arguments: @[],
+      children: @[],
     )
 
   proc parsePrefix(prefix:NimNode):WidgetArguments=
-    #assert prefix[0] == !"%", "Use % to identify"
+    assert prefix[0].strVal == "%", "Use % to identify"
     result = parseNode(prefix[1])
     result.isIdentified = true
 
@@ -110,10 +110,10 @@ macro genui*(args: varargs[untyped]): untyped =
       call = newIdentNode(widget.name)
     else:
       call = newCall("new" & widget.name)
-      if widget.arguments!=nil:
+      if widget.arguments.len != 0:
         for arg in widget.arguments:
           call.add arg
-    if widget.identifier==nil:
+    if widget.identifier.len == 0:
       widget.identifier = genSym(nskLet)
       result.add nnkLetSection.newTree(
         nnkIdentDefs.newTree(

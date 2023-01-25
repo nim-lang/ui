@@ -76,6 +76,7 @@ template genImplProcs(t: untyped) {.dirty.}=
   func `impl=`*(b: t, r: `Raw t`) = b.internalImpl = pointer(r)
 
 # ------------------- Button --------------------------------------
+
 type
   Button* = ref object of Widget
     onclick*: proc () {.closure.}
@@ -102,23 +103,21 @@ proc newButton*(text: string; onclick: proc() = nil): Button =
 
 type
   RadioButtons* = ref object of Widget
-    onRadioButtonClick*: proc() {.closure.}
-
-voidCallback(wrapOnRadioButtonClick, RadioButtons, RadioButtons, onRadioButtonClick)
-
-genImplProcs(RadioButtons)
+    impl*: ptr rawui.RadioButtons
+    onselected*: proc ()
 
 proc add*(r: RadioButtons; text: string) =
   radioButtonsAppend(r.impl, text)
+proc selected*(r: RadioButtons): int = radioButtonsSelected(r.impl)
+proc `selected=`*(r: RadioButtons; n: int) = radioButtonsSetSelected r.impl, cint n
 
-proc radioButtonsSelected*(r: RadioButtons): int =
-  radioButtonsSelected(r.impl)
+voidCallback wraprbOnSelected, RadioButtons, RadioButtons, onselected
 
-proc newRadioButtons*(onclick: proc() = nil): RadioButtons =
-  newFinal(result)
+proc newRadioButtons*(onSelected: proc() = nil): RadioButtons =
+  newFinal result
   result.impl = rawui.newRadioButtons()
-  result.impl.radioButtonsOnSelected(wrapOnRadioButtonClick, cast[pointer](result))
-  result.onRadioButtonClick = onclick
+  result.onSelected = onSelected
+  radioButtonsOnSelected(result.impl, wraprbOnSelected, cast[pointer](result))
 
 # ----------------- Window -------------------------------------------
 
@@ -451,26 +450,6 @@ proc newEditableCombobox*(onchanged: proc () = nil): EditableCombobox =
   result.impl = rawui.newEditableCombobox()
   result.onchanged = onchanged
   editableComboboxOnChanged result.impl, wrapecbOnchanged, cast[pointer](result)
-
-# ------------------------ RadioButtons ----------------------------
-
-type
-  RadioButtons* = ref object of Widget
-    impl*: ptr rawui.RadioButtons
-    onselected*: proc ()
-
-proc add*(r: RadioButtons; text: string) =
-  radioButtonsAppend(r.impl, text)
-proc selected*(r: RadioButtons): int = radioButtonsSelected(r.impl)
-proc `selected=`*(r: RadioButtons; n: int) = radioButtonsSetSelected r.impl, cint n
-
-voidCallback wraprbOnSelected, RadioButtons, RadioButtons, onselected
-
-proc newRadioButtons*(onSelected: proc() = nil): RadioButtons =
-  newFinal result
-  result.impl = rawui.newRadioButtons()
-  result.onSelected = onSelected
-  radioButtonsOnSelected(result.impl, wraprbOnSelected, cast[pointer](result))
 
 # ------------------------ MultilineEntry ------------------------------
 
